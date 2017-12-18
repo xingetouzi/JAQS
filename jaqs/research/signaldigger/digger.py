@@ -46,6 +46,8 @@ class SignalDigger(object):
                                        signal, price=None, ret=None, benchmark_price=None,
                                        period=5, n_quantiles=5,
                                        mask=None,
+                                       can_enter=None,
+                                       can_exit=None,
                                        forward=False):
         """
         Prepare for signal analysis.
@@ -90,9 +92,6 @@ class SignalDigger(object):
             raise ValueError("n_quantiles must be a positive integer. Input is: {}".format(n_quantiles))
         
         # ensure inputs are aligned
-        data = price if price is not None else ret
-        assert np.all(signal.index == data.index)
-        assert np.all(signal.columns == data.columns)
         if mask is not None:
             assert np.all(signal.index == mask.index)
             assert np.all(signal.columns == mask.columns)
@@ -100,8 +99,22 @@ class SignalDigger(object):
             mask = mask.astype(int).fillna(0).astype(bool)  # dtype of mask could be float. So we need to convert.
         else:
             mask = pd.DataFrame(index=signal.index, columns=signal.columns, data=False)
+        if can_enter is not None:
+            assert np.all(signal.index == can_enter.index)
+            assert np.all(signal.columns == can_enter.columns)
+            can_enter = jutil.fillinf(can_enter)
+            can_enter = can_enter.astype(int).fillna(0).astype(bool)  # dtype of can_enter could be float. So we need to convert.
+        else:
+            can_enter = pd.DataFrame(index=signal.index, columns=signal.columns, data=True)
+        if can_exit is not None:
+            assert np.all(signal.index == can_exit.index)
+            assert np.all(signal.columns == can_exit.columns)
+            can_exit = jutil.fillinf(can_exit)
+            can_exit = can_exit.astype(int).fillna(0).astype(bool)  # dtype of can_exit could be float. So we need to convert.
+        else:
+            can_exit = pd.DataFrame(index=signal.index, columns=signal.columns, data=True)
+
         signal = jutil.fillinf(signal)
-        data = jutil.fillinf(data)
 
         # ----------------------------------------------------------------------
         # save data
@@ -111,7 +124,15 @@ class SignalDigger(object):
         # ----------------------------------------------------------------------
         # Get dependent variables
         if price is not None:
+            assert np.all(signal.index == price.index)
+            assert np.all(signal.columns == price.columns)
+            price = jutil.fillinf(price)
             df_ret = pfm.price2ret(price, period=self.period, axis=0)
+            price_can_exit = price.copy()
+            price_can_exit[~can_exit] = np.NaN
+            price_can_exit = price_can_exit.fillna(method="bfill")
+            ret_can_exit = pfm.price2ret(price_can_exit, period=self.period, axis=0)
+            df_ret[~can_exit] = ret_can_exit[~can_exit]
             if benchmark_price is not None:
                 benchmark_price = benchmark_price.loc[signal.index]
                 bench_ret = pfm.price2ret(benchmark_price, self.period, axis=0)
@@ -119,8 +140,9 @@ class SignalDigger(object):
                 residual_ret = df_ret.sub(bench_ret.values.flatten(), axis=0)
             else:
                 residual_ret = df_ret
+            residual_ret = jutil.fillinf(residual_ret)
         else:
-            residual_ret = ret
+            residual_ret = jutil.fillinf(ret)
         
         # Get independent varibale
         signal = signal.shift(1)  # avoid forward-looking bias
@@ -132,16 +154,18 @@ class SignalDigger(object):
         else:
             # past signal and point-in-time return
             signal = signal.shift(self.period)
+            can_enter = can_enter.shift(self.period)
+            mask = mask.shift(self.period)
 
         # ----------------------------------------------------------------------
         # get masks
         # mask_prices = data.isnull()
         # Because we use FORWARD return, if one day's price is broken, the day that is <period> days ago is also broken.
         # mask_prices = np.logical_or(mask_prices, mask_prices.shift(self.period))
-        mask_price_return = residual_ret.isnull()
+        # mask_price_return = residual_ret.isnull()
         mask_signal = signal.isnull()
 
-        mask = np.logical_or(mask_signal, mask_price_return)
+        mask = np.logical_or(mask.fillna(True), np.logical_or(mask_signal, ~(can_enter.fillna(False))))
         # mask = np.logical_or(mask, mask_signal)
 
         # if price is not None:
