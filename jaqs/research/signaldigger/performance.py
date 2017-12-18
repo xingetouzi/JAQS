@@ -318,7 +318,8 @@ def price2ret(prices, period=5, axis=None):
     ret : pd.DataFrame or pd.Series
     
     """
-    ret = cum2ret(prices, period=period, axis=axis, compound=True)
+    cum = prices / prices.iloc[0] - 1.0
+    ret = cum2ret(cum, period=period, axis=axis, compound=True)
     return ret
 
 
