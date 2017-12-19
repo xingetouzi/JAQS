@@ -16,7 +16,7 @@ from jaqs.trade import common
 
 class SignalDigger(object):
     """
-    
+
     Attributes
     ----------
     signal_data : pd.DataFrame - MultiIndex
@@ -26,17 +26,18 @@ class SignalDigger(object):
     n_quantiles : int
     output_format : str
     output_folder : str
-        
+
     """
+
     def __init__(self, output_folder=".", output_format='pdf'):
         self.output_format = output_format
         self.output_folder = os.path.abspath(output_folder)
-        
+
         self.signal_data = None
         self.period = None
         self.n_quantiles = 5
         self.benchmark_ret = None
-        
+
         self.returns_report_data = dict()
         self.ic_report_data = dict()
         self.fig_data = dict()
@@ -48,7 +49,7 @@ class SignalDigger(object):
                                        mask=None,
                                        can_enter=None,
                                        can_exit=None,
-                                       forward=False):
+                                       forward=True):
         """
         Prepare for signal analysis.
 
@@ -72,7 +73,7 @@ class SignalDigger(object):
         -------
         res : pd.DataFrame
             Index is pd.MultiIndex ['trade_date', 'symbol'], columns = ['signal', 'return', 'quantile']
-            
+
         """
         """
         Deal with suspensions:
@@ -90,7 +91,7 @@ class SignalDigger(object):
             raise ValueError("You choose 'return' mode but benchmark_price is given.")
         if not (n_quantiles > 0 and isinstance(n_quantiles, int)):
             raise ValueError("n_quantiles must be a positive integer. Input is: {}".format(n_quantiles))
-        
+
         # ensure inputs are aligned
         if mask is not None:
             assert np.all(signal.index == mask.index)
@@ -103,14 +104,16 @@ class SignalDigger(object):
             assert np.all(signal.index == can_enter.index)
             assert np.all(signal.columns == can_enter.columns)
             can_enter = jutil.fillinf(can_enter)
-            can_enter = can_enter.astype(int).fillna(0).astype(bool)  # dtype of can_enter could be float. So we need to convert.
+            can_enter = can_enter.astype(int).fillna(0).astype(
+                bool)  # dtype of can_enter could be float. So we need to convert.
         else:
             can_enter = pd.DataFrame(index=signal.index, columns=signal.columns, data=True)
         if can_exit is not None:
             assert np.all(signal.index == can_exit.index)
             assert np.all(signal.columns == can_exit.columns)
             can_exit = jutil.fillinf(can_exit)
-            can_exit = can_exit.astype(int).fillna(0).astype(bool)  # dtype of can_exit could be float. So we need to convert.
+            can_exit = can_exit.astype(int).fillna(0).astype(
+                bool)  # dtype of can_exit could be float. So we need to convert.
         else:
             can_exit = pd.DataFrame(index=signal.index, columns=signal.columns, data=True)
 
@@ -127,6 +130,7 @@ class SignalDigger(object):
             assert np.all(signal.index == price.index)
             assert np.all(signal.columns == price.columns)
             price = jutil.fillinf(price)
+            can_enter = np.logical_and(price != np.NaN, can_enter)
             df_ret = pfm.price2ret(price, period=self.period, axis=0)
             price_can_exit = price.copy()
             price_can_exit[~can_exit] = np.NaN
@@ -143,7 +147,7 @@ class SignalDigger(object):
             residual_ret = jutil.fillinf(residual_ret)
         else:
             residual_ret = jutil.fillinf(ret)
-        
+
         # Get independent varibale
         signal = signal.shift(1)  # avoid forward-looking bias
 
@@ -189,7 +193,7 @@ class SignalDigger(object):
             df.index.names = ['trade_date', 'symbol']
             df.sort_index(axis=0, level=['trade_date', 'symbol'], inplace=True)
             return df
-        
+
         mask = stack_td_symbol(mask)
         df_quantile = stack_td_symbol(df_quantile)
         residual_ret = stack_td_symbol(residual_ret)
@@ -201,26 +205,29 @@ class SignalDigger(object):
         res['return'] = residual_ret
         res['quantile'] = df_quantile
         res = res.loc[~(mask.iloc[:, 0]), :]
-        
-        print("Nan Data Count (should be zero) : {:d};  " \
-              "Percentage of effective data: {:.0f}%".format(res.isnull().sum(axis=0).sum(),
-                                                             len(res) * 100. / signal.size))
+
+        if len(res) > 0:
+            print("Nan Data Count (should be zero) : {:d};  " \
+                  "Percentage of effective data: {:.0f}%".format(res.isnull().sum(axis=0).sum(),
+                                                                 len(res) * 100. / signal.size))
+        else:
+            print("No signal available.")
         res = res.astype({'signal': float, 'return': float, 'quantile': int})
         self.signal_data = res
-    
+
     def show_fig(self, fig, file_name):
         """
         Save fig object to self.output_folder/filename.
-        
+
         Parameters
         ----------
         fig : matplotlib.figure.Figure
         file_name : str
 
         """
-        
+
         self.fig_objs[file_name] = fig
-        
+
         if self.output_format in ['pdf', 'png', 'jpg']:
             fp = os.path.join(self.output_folder, '.'.join([file_name, self.output_format]))
             jutil.create_dir(fp)
@@ -234,7 +241,7 @@ class SignalDigger(object):
             fig.show()
         else:
             raise NotImplementedError("output_format = {}".format(self.output_format))
-    
+
     @plotting.customize
     def create_returns_report(self):
         """
@@ -242,14 +249,14 @@ class SignalDigger(object):
 
         """
         n_quantiles = self.signal_data['quantile'].max()
-        
+
         # ----------------------------------------------------------------------------------
         # Daily Signal Return Time Series
         # Use regression or weighted average to calculate.
-        period_wise_long_ret =\
-            pfm.calc_period_wise_weighted_signal_return(self.signal_data, weight_method='long_only')
+        period_wise_long_ret = \
+            pfm.calc_period_wise_weighted_signal_return(self.signal_data.dropna(), weight_method='long_only')
         period_wise_short_ret = \
-            pfm.calc_period_wise_weighted_signal_return(self.signal_data, weight_method='short_only')
+            pfm.calc_period_wise_weighted_signal_return(self.signal_data.dropna(), weight_method='short_only')
         cum_long_ret = pfm.period_wise_ret_to_cum(period_wise_long_ret, period=self.period, compound=False)
         cum_short_ret = pfm.period_wise_ret_to_cum(period_wise_short_ret, period=self.period, compound=False)
         # period_wise_ret_by_regression = perf.regress_period_wise_signal_return(signal_data)
@@ -262,13 +269,13 @@ class SignalDigger(object):
         # Period-wise Quantile Return Time Series
         # We calculate quantile return using equal weight or market value weight.
         # Quantile is already obtained according to signal values.
-        
+
         # quantile return
-        period_wise_quantile_ret_stats = pfm.calc_quantile_return_mean_std(self.signal_data, time_series=True)
+        period_wise_quantile_ret_stats = pfm.calc_quantile_return_mean_std(self.signal_data.dropna(), time_series=True)
         cum_quantile_ret = pd.concat({k: pfm.period_wise_ret_to_cum(v['mean'], period=self.period, compound=False)
                                       for k, v in period_wise_quantile_ret_stats.items()},
                                      axis=1)
-        
+
         # top quantile minus bottom quantile return
         period_wise_tmb_ret = pfm.calc_return_diff_mean_std(period_wise_quantile_ret_stats[n_quantiles],
                                                             period_wise_quantile_ret_stats[1])
@@ -281,13 +288,13 @@ class SignalDigger(object):
         weighted_portfolio_alpha_beta
         tmb_alpha_beta =
         '''
-        
+
         # start plotting
         if self.output_format:
             vertical_sections = 6
             gf = plotting.GridFigure(rows=vertical_sections, cols=1)
             gf.fig.suptitle("Returns Tear Sheet\n\n(no compound)\n (period length = {:d} days)".format(self.period))
-    
+
             plotting.plot_quantile_returns_ts(period_wise_quantile_ret_stats,
                                               ax=gf.next_row())
 
@@ -297,7 +304,7 @@ class SignalDigger(object):
             plotting.plot_cumulative_return(cum_long_ret,
                                             title="Signal Weighted Long Only Portfolio Cumulative Return",
                                             ax=gf.next_row())
-            
+
             plotting.plot_cumulative_return(cum_short_ret,
                                             title="Signal Weighted Short Only Portfolio Cumulative Return",
                                             ax=gf.next_row())
@@ -305,14 +312,14 @@ class SignalDigger(object):
             plotting.plot_mean_quantile_returns_spread_time_series(period_wise_tmb_ret, self.period,
                                                                    bandwidth=0.5,
                                                                    ax=gf.next_row())
-            
+
             plotting.plot_cumulative_return(cum_tmb_ret,
                                             title="Top Minus Bottom (long top, short bottom)"
                                                   "Portfolio Cumulative Return",
                                             ax=gf.next_row())
 
             self.show_fig(gf.fig, 'returns_report')
-        
+
         self.returns_report_data = {'period_wise_quantile_ret': period_wise_quantile_ret_stats,
                                     'cum_quantile_ret': cum_quantile_ret,
                                     'cum_long_ret': cum_long_ret,
@@ -324,16 +331,16 @@ class SignalDigger(object):
     def create_information_report(self):
         """
         Creates a tear sheet for information analysis of a signal.
-        
+
         """
-        ic = pfm.calc_signal_ic(self.signal_data)
+        ic = pfm.calc_signal_ic(self.signal_data.dropna())
         ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
         monthly_ic = pfm.mean_information_coefficient(ic, "M")
 
         if self.output_format:
             ic_summary_table = pfm.calc_ic_stats_table(ic)
             plotting.plot_information_table(ic_summary_table)
-            
+
             columns_wide = 2
             fr_cols = len(ic.columns)
             rows_when_wide = (((fr_cols - 1) // columns_wide) + 1)
@@ -347,16 +354,18 @@ class SignalDigger(object):
             # plotting.plot_ic_qq(ic, ax=ax_ic_hqq[1::2])
 
             plotting.plot_monthly_ic_heatmap(monthly_ic, period=self.period, ax=gf.next_row())
-        
+
             self.show_fig(gf.fig, 'information_report')
-        
+
         self.ic_report_data = {'daily_ic': ic,
                                'monthly_ic': monthly_ic}
-    
-    def create_binary_event_report(self, signal, price, mask, benchmark_price, periods,
+
+    def create_binary_event_report(self, signal, price, mask=None,
+                                   can_enter=None, can_exit=None,
+                                   benchmark_price=None, periods=(5, 10, 20),
                                    join_method_periods='inner', group_by=None):
         """
-        
+
         Parameters
         ----------
         signal : pd.DataFrame
@@ -380,11 +389,17 @@ class SignalDigger(object):
         dic_signal_data = OrderedDict()
         for my_period in periods:
             self.process_signal_before_analysis(signal, price=price, mask=mask,
+                                                can_enter=can_enter,
+                                                can_exit=can_exit,
                                                 n_quantiles=1, period=my_period,
                                                 benchmark_price=benchmark_price,
                                                 forward=True)
-            dic_signal_data[my_period] = self.signal_data
-        
+            if len(self.signal_data) > 0:
+                dic_signal_data[my_period] = self.signal_data
+
+        if not dic_signal_data:
+            print("No binary event available.")
+            return None, None, None
         # Processed Data
         dic_events = OrderedDict()
         dic_all = OrderedDict()
@@ -401,17 +416,17 @@ class SignalDigger(object):
         def _calc_statistics(df):
             df_res = pd.DataFrame(index=periods,
                                   columns=['Annu. Ret.', 'Annu. Vol.',
-                                           #'Annual Return (all sample)', 'Annual Volatility (all sample)',
+                                           # 'Annual Return (all sample)', 'Annual Volatility (all sample)',
                                            't-stat', 'p-value', 'skewness', 'kurtosis', 'occurance'],
                                   data=np.nan)
             df_res.index.name = 'Period'
-            
+
             ser_periods = pd.Series(index=df.columns, data=df.columns.values)
             ratio = (1.0 * common.CALENDAR_CONST.TRADE_DAYS_PER_YEAR / ser_periods)
             mean = df.mean(axis=0)
             std = df.std(axis=0)
             annual_ret, annual_vol = mean * ratio, std * np.sqrt(ratio)
-            
+
             t_stats, p_values = scst.ttest_1samp(df.values, np.zeros(df.shape[1]), axis=0)
             df_res.loc[:, 't-stat'] = t_stats
             df_res.loc[:, 'p-value'] = np.round(p_values, 5)
@@ -450,38 +465,40 @@ class SignalDigger(object):
                                             monthly_signal=monthly_signal, yearly_signal=yearly_signal,
                                             ax1=gf.next_row(), ax2=gf.next_row())
         plotting.plot_event_bar(df_stats.reset_index(), x='Period', y='Annu. Ret.', hue='trade_date', ax=gf.next_row())
+
         # plotting.plot_event_pvalue(df_stats['p-value'], ax=gf.next_subrow())
-        
+
         def _plot_dist(df):
             date = grouper_func(df.index.get_level_values('trade_date'))[0]
             plotting.plot_event_dist(df, group_by.title() + ' ' + str(date), axs=[gf.next_cell() for _ in periods])
+
         if group_by is not None:
             df_events.groupby(idx_group).apply(_plot_dist)
         else:
             plotting.plot_event_dist(df_events, "", axs=[gf.next_cell() for _ in periods])
-        
+
         self.show_fig(gf.fig, 'event_report')
 
         # dic_res['df_res'] = df_res
         return df_all, df_events, df_stats
-        
+
     @plotting.customize
     def create_full_report(self):
         """
         Creates a full tear sheet for analysis and evaluating single
         return predicting (alpha) signal.
-        
+
         """
         # signal quantile description statistics
         qstb = calc_quantile_stats_table(self.signal_data)
         if self.output_format:
             plotting.plot_quantile_statistics_table(qstb)
-            
+
         self.create_returns_report()
         self.create_information_report()
         # we do not do turnover analysis for now
         # self.create_turnover_report(signal_data)
-        
+
         res = dict()
         res.update(self.returns_report_data)
         res.update(self.ic_report_data)
@@ -521,21 +538,21 @@ def get_year(ser):
 def get_dummy_grouper(ser):
     res = pd.Index(np.array(['all_sample'] * len(ser)), name=ser.name)
     return res
-    
-    
+
+
 def calc_calendar_distribution(df_signal):
     daily_signal = df_signal.sum(axis=1)
     daily_signal = daily_signal.fillna(0).astype(int)
     idx = daily_signal.index.values
     month = get_month(idx)
     year = get_year(idx)
-    
+
     monthly_signal = daily_signal.groupby(by=month).sum()
     yearly_signal = daily_signal.groupby(by=year).sum()
-    
+
     monthly_signal = pd.DataFrame(monthly_signal, columns=['Time'])
     yearly_signal = pd.DataFrame(yearly_signal, columns=['Time'])
     monthly_signal.index.name = 'Month'
     yearly_signal.index.name = 'Year'
-    
+
     return daily_signal, monthly_signal, yearly_signal
