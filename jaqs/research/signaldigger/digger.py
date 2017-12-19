@@ -202,7 +202,7 @@ class SignalDigger(object):
         # concat signal value
         res = stack_td_symbol(signal)
         res.columns = ['signal']
-        res['return'] = residual_ret
+        res['return'] = residual_ret.fillna(0)
         res['quantile'] = df_quantile
         res = res.loc[~(mask.iloc[:, 0]), :]
 
@@ -254,9 +254,9 @@ class SignalDigger(object):
         # Daily Signal Return Time Series
         # Use regression or weighted average to calculate.
         period_wise_long_ret = \
-            pfm.calc_period_wise_weighted_signal_return(self.signal_data.dropna(), weight_method='long_only')
+            pfm.calc_period_wise_weighted_signal_return(self.signal_data, weight_method='long_only')
         period_wise_short_ret = \
-            pfm.calc_period_wise_weighted_signal_return(self.signal_data.dropna(), weight_method='short_only')
+            pfm.calc_period_wise_weighted_signal_return(self.signal_data, weight_method='short_only')
         cum_long_ret = pfm.period_wise_ret_to_cum(period_wise_long_ret, period=self.period, compound=False)
         cum_short_ret = pfm.period_wise_ret_to_cum(period_wise_short_ret, period=self.period, compound=False)
         # period_wise_ret_by_regression = perf.regress_period_wise_signal_return(signal_data)
@@ -271,7 +271,7 @@ class SignalDigger(object):
         # Quantile is already obtained according to signal values.
 
         # quantile return
-        period_wise_quantile_ret_stats = pfm.calc_quantile_return_mean_std(self.signal_data.dropna(), time_series=True)
+        period_wise_quantile_ret_stats = pfm.calc_quantile_return_mean_std(self.signal_data, time_series=True)
         cum_quantile_ret = pd.concat({k: pfm.period_wise_ret_to_cum(v['mean'], period=self.period, compound=False)
                                       for k, v in period_wise_quantile_ret_stats.items()},
                                      axis=1)
@@ -333,7 +333,8 @@ class SignalDigger(object):
         Creates a tear sheet for information analysis of a signal.
 
         """
-        ic = pfm.calc_signal_ic(self.signal_data.dropna())
+        print(self.signal_data)
+        ic = pfm.calc_signal_ic(self.signal_data)
         ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
         monthly_ic = pfm.mean_information_coefficient(ic, "M")
 
