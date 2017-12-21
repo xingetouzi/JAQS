@@ -131,15 +131,15 @@ class SignalDigger(object):
             assert np.all(signal.columns == price.columns)
             price = jutil.fillinf(price)
             can_enter = np.logical_and(price != np.NaN, can_enter)
-            df_ret = pfm.price2ret(price, period=self.period, axis=0)
+            df_ret = pfm.price2ret(price, period=self.period, axis=0, compound=True)
             price_can_exit = price.copy()
             price_can_exit[~can_exit] = np.NaN
             price_can_exit = price_can_exit.fillna(method="bfill")
-            ret_can_exit = pfm.price2ret(price_can_exit, period=self.period, axis=0)
+            ret_can_exit = pfm.price2ret(price_can_exit, period=self.period, axis=0, compound=True)
             df_ret[~can_exit] = ret_can_exit[~can_exit]
             if benchmark_price is not None:
                 benchmark_price = benchmark_price.loc[signal.index]
-                bench_ret = pfm.price2ret(benchmark_price, self.period, axis=0)
+                bench_ret = pfm.price2ret(benchmark_price, self.period, axis=0, compound=True)
                 self.benchmark_ret = bench_ret
                 residual_ret = df_ret.sub(bench_ret.values.flatten(), axis=0)
             else:
@@ -257,8 +257,8 @@ class SignalDigger(object):
             pfm.calc_period_wise_weighted_signal_return(self.signal_data, weight_method='long_only')
         period_wise_short_ret = \
             pfm.calc_period_wise_weighted_signal_return(self.signal_data, weight_method='short_only')
-        cum_long_ret = pfm.period_wise_ret_to_cum(period_wise_long_ret, period=self.period, compound=False)
-        cum_short_ret = pfm.period_wise_ret_to_cum(period_wise_short_ret, period=self.period, compound=False)
+        cum_long_ret = pfm.period_wise_ret_to_cum(period_wise_long_ret, period=self.period, compound=True)
+        cum_short_ret = pfm.period_wise_ret_to_cum(period_wise_short_ret, period=self.period, compound=True)
         # period_wise_ret_by_regression = perf.regress_period_wise_signal_return(signal_data)
         # period_wise_ls_signal_ret = \
         #     pfm.calc_period_wise_weighted_signal_return(signal_data, weight_method='long_short')
@@ -272,14 +272,14 @@ class SignalDigger(object):
 
         # quantile return
         period_wise_quantile_ret_stats = pfm.calc_quantile_return_mean_std(self.signal_data, time_series=True)
-        cum_quantile_ret = pd.concat({k: pfm.period_wise_ret_to_cum(v['mean'], period=self.period, compound=False)
+        cum_quantile_ret = pd.concat({k: pfm.period_wise_ret_to_cum(v['mean'], period=self.period, compound=True)
                                       for k, v in period_wise_quantile_ret_stats.items()},
                                      axis=1)
 
         # top quantile minus bottom quantile return
         period_wise_tmb_ret = pfm.calc_return_diff_mean_std(period_wise_quantile_ret_stats[n_quantiles],
                                                             period_wise_quantile_ret_stats[1])
-        cum_tmb_ret = pfm.period_wise_ret_to_cum(period_wise_tmb_ret['mean_diff'], period=self.period, compound=False)
+        cum_tmb_ret = pfm.period_wise_ret_to_cum(period_wise_tmb_ret['mean_diff'], period=self.period, compound=True)
 
         # ----------------------------------------------------------------------------------
         # Alpha and Beta
@@ -333,7 +333,6 @@ class SignalDigger(object):
         Creates a tear sheet for information analysis of a signal.
 
         """
-        print(self.signal_data)
         ic = pfm.calc_signal_ic(self.signal_data)
         ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
         monthly_ic = pfm.mean_information_coefficient(ic, "M")

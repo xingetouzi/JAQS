@@ -322,8 +322,15 @@ def price2ret(prices, period=5, axis=None, compound=False):
     ret : pd.DataFrame or pd.Series
 
     """
-    cum = prices / prices.iloc[0] - 1.0
-    ret = cum2ret(cum, period=period, axis=axis, compound=compound)
+    if axis is None:
+        kwargs = dict()
+    else:
+        kwargs = {'axis': axis}
+
+    if compound:
+        ret = prices.pct_change(periods=period, **kwargs)
+    else:
+        ret = prices.diff(periods=period, **kwargs) / prices.iloc[0]
     return ret
 
 
