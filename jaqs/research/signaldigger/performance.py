@@ -307,7 +307,7 @@ def daily_ret_to_cum2(df_ret, axis=0):
     return cum
 
 
-def price2ret(prices, period=5, axis=None, compound=False):
+def price2ret(prices, period=5, axis=None, compound=True):
     """
 
     Parameters
@@ -334,7 +334,7 @@ def price2ret(prices, period=5, axis=None, compound=False):
     return ret
 
 
-def cum2ret(cum, period=1, axis=None, compound=False):
+def cum2ret(cum, period=1, axis=None, compound=True):
     """
 
     Parameters
@@ -365,7 +365,7 @@ def cum2ret(cum, period=1, axis=None, compound=False):
     return ret
 
 
-def ret2cum(ret, compound=False, axis=None):
+def ret2cum(ret, compound=True, axis=None):
     """
 
     Parameters
@@ -393,7 +393,7 @@ def ret2cum(ret, compound=False, axis=None):
     return cum
 
 
-def calc_performance_metrics(ser, cum_return=False, compound=False):
+def calc_performance_metrics(ser, cum_return=False, compound=True):
     """
     Calculate annualized return, volatility and sharpe.
     We assumed data frequency to be day.
@@ -443,7 +443,7 @@ def calc_performance_metrics(ser, cum_return=False, compound=False):
     return res
 
 
-def period_wise_ret_to_cum(ret, period, compound=False):
+def period_wise_ret_to_cum(ret, period, compound=True):
     """
     Calculate cumulative returns from N-periods returns, no compounding.
     When 'period' N is greater than 1 the cumulative returns plot is computed

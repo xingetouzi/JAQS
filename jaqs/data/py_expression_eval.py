@@ -13,8 +13,6 @@
 
 # modified by symbol from quantOS.org
 
-# add new formula
-
 from __future__ import division
 from __future__ import print_function
 
