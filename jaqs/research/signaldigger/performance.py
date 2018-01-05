@@ -113,8 +113,7 @@ def calc_period_wise_weighted_signal_return(signal_data, weight_method):
         if method == 'equal_weight':
             ser.loc[:] = 1.0 / len(ser)
         elif method == 'long_short':
-            # TODO: do we need to de-mean?
-            ser = ser - ser.mean()
+            ser = ser
         elif method == 'long_only':
             ser = (ser + ser.abs()) / 2.0
         elif method == 'short_only':

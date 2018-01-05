@@ -49,7 +49,8 @@ class SignalDigger(object):
                                        mask=None,
                                        can_enter=None,
                                        can_exit=None,
-                                       forward=True):
+                                       forward=True,
+                                       commission=0.0008):
         """
         Prepare for signal analysis.
 
@@ -145,6 +146,7 @@ class SignalDigger(object):
             else:
                 residual_ret = df_ret
             residual_ret = jutil.fillinf(residual_ret)
+            residual_ret -= commission
         else:
             residual_ret = jutil.fillinf(ret)
 
@@ -365,7 +367,6 @@ class SignalDigger(object):
                                    benchmark_price=None, periods=(5, 10, 20),
                                    join_method_periods='inner', group_by=None):
         """
-
         Parameters
         ----------
         signal : pd.DataFrame
