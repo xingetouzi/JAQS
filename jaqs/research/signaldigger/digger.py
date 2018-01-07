@@ -152,7 +152,6 @@ class SignalDigger(object):
 
         # Get independent varibale
         signal = signal.shift(1)  # avoid forward-looking bias
-
         # forward or not
         if forward:
             # point-in-time signal and forward return
