@@ -83,35 +83,59 @@ def rank_standardize(factor_df, ascending=True):
     return factor_df.apply(lambda x: x.rank(method="min", ascending=ascending) / num, axis=1)
 
 
-def _prepare_neutralize_data(pools,
-                             start,
-                             end,
-                             group_field="sw1",
-                             dv=None,
-                             ds=None):
-    if dv is not None:
-        if (group_field in dv.fields) and ("float_mv" in dv.fields) \
-                and (set(pools) - set(dv.symbol) == 0) \
-                and (start >= dv.start_date and end <= dv.end_date):
-            if not('LFLO' in dv.fields):
-                dv.add_formula('LFLO', "Log(float_mv)", is_quarterly=False)
-            return dv
-    dv = DataView()
+# 将因子值加一个极小的扰动项,用于对quantile做区分
+def get_disturbed_factor(factor_df):
+    """
+    将因子值加一个极小的扰动项,用于对quantile区分
+    :param factor_df: 因子值 (pandas.Dataframe类型),index为datetime, colunms为股票代码。
+                      形如:
+                                  　AAPL	　　　     BA	　　　CMG	　　   DAL	      LULU	　　
+                        date
+                        2016-06-24	0.165260	0.002198	0.085632	-0.078074	0.173832
+                        2016-06-27	0.165537	0.003583	0.063299	-0.048674	0.180890
+                        2016-06-28	0.135215	0.010403	0.059038	-0.034879	0.111691
+                        2016-06-29	0.068774	0.019848	0.058476	-0.049971	0.042805
+                        2016-06-30	0.039431	0.012271	0.037432	-0.027272	0.010902
+
+    :return: 重构后的因子值,每个值加了一个极小的扰动项。
+    """
+    return factor_df + np.random.random(factor_df.shape) / 1000000000
+
+
+def _prepare_data(pools,
+                  start,
+                  end,
+                  group_field="sw1",
+                  dv=None,
+                  ds=None):
     if ds is None:
         ds = RemoteDataService()
         ds.init_from_config(data_config)
-        dv.data_api = ds
-    else:
-        dv.data_api = ds
-    dv.symbol = sorted(pools)
-    dv.start_date = start
-    dv.end_date = end
-    dv.extended_start_date_d = jutil.shift(dv.start_date, n_weeks=-8)  # query more data
-    dv.extended_start_date_q = jutil.shift(dv.start_date, n_weeks=-80)
-    dv.freq = 1
-    dv.fields = [group_field, "float_mv"]
+
+    if dv is not None:
+        if (set(pools) - set(dv.symbol) == 0) \
+                and (start >= dv.start_date and end <= dv.end_date):
+            fields = ["float_mv",group_field,
+                      'open_adj', 'high_adj', 'low_adj', 'close_adj',
+                      'open', 'high', 'low', 'close',
+                      'vwap', 'vwap_adj']
+            for field in fields:
+                if not (field in dv.fields):
+                    dv.add_field(field,ds)
+            if not ('LFLO' in dv.fields):
+                dv.add_formula('LFLO', "Log(float_mv)", is_quarterly=False)
+            return dv
+
+    if not (group_field in ["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"]):
+        raise ValueError("group_field 只能为%s" % (str(["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"])))
+    dv = DataView()
+    props = {'start_date': start, 'end_date': end,
+             'symbol': ','.join(pools),
+             'fields': 'float_mv,%s' % (group_field,),
+             'freq': 1}
+    dv.init_from_config(props, ds)
     dv.prepare_data()
-    dv.add_formula('LFLO', "Log(float_mv)",is_quarterly=False)
+    dv.add_formula('LFLO', "Log(float_mv)", is_quarterly=False)
     return dv
 
 
@@ -153,6 +177,7 @@ def neutralize(factor_df,
         return X
 
     # 剔除有过多无效数据的个股
+    factor_df = jutil.fillinf(factor_df)
     empty_data = pd.isnull(factor_df).sum()
     pools = empty_data[empty_data < len(factor_df) * 0.1].index  # 保留空值比例低于0.1的股票
     factor_df = factor_df.loc[:, pools]
@@ -161,7 +186,7 @@ def neutralize(factor_df,
     factor_df = factor_df.dropna(thresh=len(factor_df.columns) * 0.9)  # 保留空值比例低于0.9的截面
     start = factor_df.index[0]
     end = factor_df.index[-1]
-    dv = _prepare_neutralize_data(pools,start,end,group_field,dv=dv,ds=ds)
+    dv = _prepare_data(pools, start, end, group_field, dv=dv, ds=ds)
 
     # 获取对数流动市值，并去极值、标准化。市值类因子不需进行这一步
     if not factorIsMV:
@@ -176,7 +201,7 @@ def neutralize(factor_df,
         # 获取行业分类信息
         X = X_dict[i]
         if not factorIsMV:
-            nfactors = int(X.index[-1]+1)
+            nfactors = int(X.index[-1] + 1)
             DataAll = pd.concat([X.T, x1.loc[i], factor_df.loc[i]], axis=1)
         else:
             nfactors = int(X.index[-1])
