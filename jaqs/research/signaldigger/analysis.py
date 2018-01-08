@@ -27,7 +27,7 @@ def ic_stats(signal_data):
     ic = pfm.calc_signal_ic(signal_data)
     ic = ic.dropna()
     ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
-    ic_summary_table = pfm.calc_ic_stats_table(ic)
+    ic_summary_table = pfm.calc_ic_stats_table(ic).T
     return ic_summary_table
 
 def return_stats(signal_data,is_event,period):
