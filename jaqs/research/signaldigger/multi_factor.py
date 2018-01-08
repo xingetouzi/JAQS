@@ -12,7 +12,8 @@ from . import SignalDigger
 
 # 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子,默认对Admin里加载的所有因子做调整
 def orthogonalize(factors_dict=None,
-                  standardize_type="rank"):
+                  standardize_type="rank",
+                  winsorization=False):
     """
     # 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子,默认对Admin里加载的所有因子做调整
     :param factors_dict: 若干因子组成的字典(dict),形式为:
@@ -39,6 +40,8 @@ def orthogonalize(factors_dict=None,
         new_factors_dict[factor_name] = []
         # 处理非法值
         factors_dict[factor_name] = jutil.fillinf(factors_dict[factor_name])
+        if winsorization:
+            factors_dict[factor_name] = process.winsorize(factors_dict[factor_name])
 
     factor_name_list = list(factors_dict.keys())
     factor_value_list = list(factors_dict.values())
@@ -178,11 +181,27 @@ def max_IR_weight(ic_df,
 
 def combine_factors(factors_dict=None,
                     standardize_type="rank",
+                    winsorization=False,
                     weighted_method="equal_weight",
                     max_IR_props=None):
     """
     # 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子,默认对Admin里加载的所有因子做调整
-    :param max_IR_props:
+    :param winsorization: 是否去极值
+    :param max_IR_props:　当weighted_method="max_IR"时　需传入此配置　配置内容包括
+     max_IR_props = {
+            'dataview': None,
+            "data_api": None,
+            'price': None,
+            'benchmark_price': None,
+            'period': 5,
+            'mask': None,
+            'can_enter': None,
+            'can_exit': None,
+            'forward': True,
+            'commission': 0.0008,
+            "covariance_type": "simple",  # 还可以为"shrink"
+            "rollback_period": 120
+        }
     :param factors_dict: 若干因子组成的字典(dict),形式为:
                          {"factor_name_1":factor_1,"factor_name_2":factor_2}
                        　每个因子值格式为一个pd.DataFrame，索引(index)为date,column为asset
@@ -217,6 +236,8 @@ def combine_factors(factors_dict=None,
         factor_name_list = factors_dict.keys()
         for factor_name in factor_name_list:
             factors_dict[factor_name] = jutil.fillinf(factors_dict[factor_name])
+            if winsorization:
+                factors_dict[factor_name] = process.winsorize(factors_dict[factor_name])
             if standardize_type == "z_score":
                 factors_dict[factor_name] = process.standardize(factors_dict[factor_name])
             elif standardize_type == "rank":
