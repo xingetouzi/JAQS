@@ -51,9 +51,9 @@ class Optimizer(object):
     '''
 
     def __init__(self,
-                 dataview,
-                 formula,
-                 params,
+                 dataview=None,
+                 formula="",
+                 params=None,
                  name=None,
                  price=None,
                  ret=None,
@@ -142,7 +142,7 @@ class Optimizer(object):
         :return:
         '''
 
-        if self._judge_target(target_type, target):#  判断target合法性
+        if self._judge_target(target_type, target):  # 判断target合法性
             self.get_all_signals_perf(in_sample_range)
             if len(self.all_signals_perf) == 0:
                 return []
@@ -171,10 +171,11 @@ class Optimizer(object):
                 self.all_signals[self.name + str(para_dict)] = self.cal_signal(signal)
 
     def get_all_signals_perf(self, in_sample_range=None):
+        self.get_all_signals()
         if self.all_signals_perf is None or \
-                        self.in_sample_range != in_sample_range:
+                (self.in_sample_range != in_sample_range) or \
+                (len(set(self.all_signals_perf.keys())-set(self.all_signals.keys())) != 0):
             self.all_signals_perf = dict()
-            self.get_all_signals()
             for sig_name in self.all_signals.keys():
                 perf = self.cal_perf(self.all_signals[sig_name], in_sample_range)
                 if perf is not None:
