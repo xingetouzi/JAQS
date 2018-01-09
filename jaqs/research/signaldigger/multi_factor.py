@@ -10,12 +10,12 @@ from . import performance as pfm
 from . import SignalDigger
 
 
-# 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子,默认对Admin里加载的所有因子做调整
+# 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子
 def orthogonalize(factors_dict=None,
-                  standardize_type="rank",
+                  standardize_type="z_score",
                   winsorization=False):
     """
-    # 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子,默认对Admin里加载的所有因子做调整
+    # 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子
     :param factors_dict: 若干因子组成的字典(dict),形式为:
                          {"factor_name_1":factor_1,"factor_name_2":factor_2}
                        　每个因子值格式为一个pd.DataFrame，索引(index)为date,column为asset
@@ -229,8 +229,8 @@ def combine_factors(factors_dict=None,
 
     def standarize_factors(factors,
                            standardize_type=None):
-        if isinstance(factors,pd.DataFrame):
-            factors_dict = {"factor":factors}
+        if isinstance(factors, pd.DataFrame):
+            factors_dict = {"factor": factors}
         else:
             factors_dict = factors
         factor_name_list = factors_dict.keys()
@@ -251,7 +251,7 @@ def combine_factors(factors_dict=None,
         if not (max_IR_props is None):
             props.update(max_IR_props)
         if props["price"] is None:
-            factors_name = factors_dict.keys()
+            factors_name = list(factors_dict.keys())
             factor_0 = factors_dict[factors_name[0]]
             pools = list(factor_0.columns)
             start = factor_0.index[0]
@@ -280,7 +280,7 @@ def combine_factors(factors_dict=None,
         factor_name_list = factors_dict.keys()
         for factor_name in factor_name_list:
             w = pd.DataFrame(data=weight[factor_name], index=factors_dict[factor_name].index)
-            w = pd.concat([w for i in factors_dict[factor_name].columns],axis=1)
+            w = pd.concat([w] * len(factors_dict[factor_name].columns), axis=1)
             w.columns = factors_dict[factor_name].columns
             weighted_factors[factor_name] = factors_dict[factor_name] * w
     elif weighted_method == "equal_weight":
@@ -288,6 +288,5 @@ def combine_factors(factors_dict=None,
     else:
         raise ValueError('weighted_method 只能为equal_weight/max_IR')
     new_factor = reduce(sum_weighted_factors, weighted_factors.values())
-    new_factor = standarize_factors(new_factor,standardize_type)["factor"]
+    new_factor = standarize_factors(new_factor, standardize_type)["factor"]
     return new_factor
-

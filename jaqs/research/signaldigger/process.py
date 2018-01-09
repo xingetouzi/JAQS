@@ -108,26 +108,31 @@ def _prepare_data(pools,
                   group_field="sw1",
                   dv=None,
                   ds=None):
+
+    if not (group_field in ["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"]):
+        raise ValueError("group_field 只能为%s" % (str(["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"])))
+
     if ds is None:
         ds = RemoteDataService()
         ds.init_from_config(data_config)
 
     if dv is not None:
-        if (set(pools) - set(dv.symbol) == 0) \
+        if (len(set(pools) - set(dv.symbol)) == 0) \
                 and (start >= dv.start_date and end <= dv.end_date):
-            fields = ["float_mv",group_field,
+            if dv.data_api is None:
+                dv.data_api = ds
+            fields = ["float_mv",
                       'open_adj', 'high_adj', 'low_adj', 'close_adj',
                       'open', 'high', 'low', 'close',
                       'vwap', 'vwap_adj']
             for field in fields:
                 if not (field in dv.fields):
                     dv.add_field(field,ds)
+            dv._prepare_group([group_field])
             if not ('LFLO' in dv.fields):
                 dv.add_formula('LFLO', "Log(float_mv)", is_quarterly=False)
             return dv
 
-    if not (group_field in ["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"]):
-        raise ValueError("group_field 只能为%s" % (str(["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"])))
     dv = DataView()
     props = {'start_date': start, 'end_date': end,
              'symbol': ','.join(pools),
@@ -149,7 +154,7 @@ def neutralize(factor_df,
     对因子做行业、市值中性化
     :param ds: data_api
     :param dv: dataview
-    :param group_field:
+    :param group_field:　行业分类类型　"sw1", "sw1", "sw1", "sw1", "zz1", "zz2"
     :param factor_df: 因子值 (pandas.Dataframe类型),index为datetime, colunms为股票代码。
                       形如:
                                   　AAPL	　　　     BA	　　　CMG	　　   DAL	      LULU	　　
