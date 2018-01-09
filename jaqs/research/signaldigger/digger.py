@@ -9,6 +9,7 @@ import pandas as pd
 
 from . import performance as pfm
 from . import plotting
+from .analysis import compute_downside_returns, compute_upside_returns
 
 import jaqs.util as jutil
 from jaqs.trade import common
@@ -45,6 +46,7 @@ class SignalDigger(object):
 
     def process_signal_before_analysis(self,
                                        signal, price=None, ret=None, benchmark_price=None,
+                                       high=None, low=None,
                                        period=5, n_quantiles=5,
                                        mask=None,
                                        can_enter=None,
@@ -73,8 +75,7 @@ class SignalDigger(object):
         Returns
         -------
         res : pd.DataFrame
-            Index is pd.MultiIndex ['trade_date', 'symbol'], columns = ['signal', 'return', 'quantile']
-
+            Index is pd.MultiIndex ['trade_date', 'symbol'], columns = ['signal', 'return', 'upside_ret(N)','downside_ret(N)','quantile']
         """
         """
         Deal with suspensions:
@@ -127,6 +128,8 @@ class SignalDigger(object):
 
         # ----------------------------------------------------------------------
         # Get dependent variables
+        upside_ret = None
+        downside_ret = None
         if price is not None:
             assert np.all(signal.index == price.index)
             assert np.all(signal.columns == price.columns)
@@ -147,6 +150,21 @@ class SignalDigger(object):
                 residual_ret = df_ret
             residual_ret = jutil.fillinf(residual_ret)
             residual_ret -= commission
+            # 计算潜在上涨空间和潜在下跌空间
+            if high is not None:
+                assert np.all(signal.index == high.index)
+                assert np.all(signal.columns == high.columns)
+                high = jutil.fillinf(high)
+                upside_ret = compute_upside_returns(price, high, can_exit, self.period, compound=True)
+                upside_ret = jutil.fillinf(upside_ret)
+                upside_ret -= commission
+            if low is not None:
+                assert np.all(signal.index == low.index)
+                assert np.all(signal.columns == low.columns)
+                low = jutil.fillinf(low)
+                downside_ret = compute_downside_returns(price, low, can_exit, self.period, compound=True)
+                downside_ret = jutil.fillinf(downside_ret)
+                downside_ret -= commission
         else:
             residual_ret = jutil.fillinf(ret)
 
@@ -156,6 +174,10 @@ class SignalDigger(object):
         if forward:
             # point-in-time signal and forward return
             residual_ret = residual_ret.shift(-self.period)
+            if upside_ret is not None:
+                upside_ret = upside_ret.shift(-self.period)
+            if downside_ret is not None:
+                downside_ret = downside_ret.shift(-self.period)
         else:
             # past signal and point-in-time return
             signal = signal.shift(self.period)
@@ -204,6 +226,10 @@ class SignalDigger(object):
         res = stack_td_symbol(signal)
         res.columns = ['signal']
         res['return'] = residual_ret.fillna(0)
+        if upside_ret is not None:
+            res["upside_ret"] = stack_td_symbol(upside_ret).fillna(0)
+        if downside_ret is not None:
+            res["downside_ret"] = stack_td_symbol(downside_ret).fillna(0)
         res['quantile'] = df_quantile
         res = res.loc[~(mask.iloc[:, 0]), :]
 
