@@ -176,11 +176,178 @@ def get_rets(signal_data, is_event):
     return rets
 
 
+def weighted_signal_ret_space(signal_data):
+    """
+    Computes period wise period_wise_returns for portfolio weighted by signal
+    values. Weights are computed by demeaning signals and dividing
+    by the sum of their absolute value (achieving gross leverage of 1).
+
+    Parameters
+    ----------
+    signal_data : pd.DataFrame - MultiIndex
+        Index is pd.MultiIndex ['trade_date', 'symbol'], columns = ['signal', 'return', "upside_ret","downside_ret", 'quantile']
+
+    Returns
+    -------
+    space : pd.DataFrame of dict
+        weighted_signal_ret_space
+    """
+
+    def calc_norm_weights(ser, method):
+        if method == 'long_only':
+            ser = (ser + ser.abs()) / 2.0
+        elif method == 'short_only':
+            ser = (ser - ser.abs()) / 2.0
+        else:
+            raise ValueError("method can only be long_only or short_only,"
+                             "but [{}] is provided".format(method))
+        return ser / ser.abs().sum()
+
+    grouper = ['trade_date']
+
+    long_weights = signal_data.groupby(grouper)['signal'].apply(calc_norm_weights, "long_only")
+    short_weights = signal_data.groupby(grouper)['signal'].apply(calc_norm_weights, "short_only")
+
+    space = dict()
+    space["long_space"] = dict()
+    space["long_space"]["upside_space"] = signal_data['upside_ret'].multiply(long_weights, axis=0)
+    space["long_space"]["downside_space"] = signal_data['downside_ret'].multiply(long_weights, axis=0)
+    space["short_space"] = dict()
+    space["short_space"]["upside_space"] = signal_data['downside_ret'].multiply(short_weights, axis=0)
+    space["short_space"]["downside_space"] = signal_data['upside_ret'].multiply(short_weights, axis=0)
+    space["long_short_space"] = dict()
+    space["long_short_space"]["upside_space"] = space["long_space"]["upside_space"] + space["short_space"][
+        "upside_space"]
+    space["long_short_space"]["downside_space"] = space["long_space"]["downside_space"] + space["short_space"][
+        "downside_space"]
+
+    for dir_type in ["long_space", "short_space", "long_short_space"]:
+        for space_type in ["upside_space", "downside_space"]:
+            space[dir_type][space_type] = space[dir_type][space_type].groupby(level='trade_date').sum()
+            space[dir_type][space_type] = pd.DataFrame(space[dir_type][space_type])
+
+    return space
+
+
+def calc_tb_quantile_ret_space_mean_std(signal_data,
+                                        space_type="upside"):
+    """
+    Computes mean space for signal top & bottom quantiles across
+    provided upside_ret or downside_ret.
+
+    Parameters
+    ----------
+    signal_data : pd.DataFrame - MultiIndex
+        Index is pd.MultiIndex ['trade_date', 'symbol'], columns = ['signal', 'return', 'upside_ret', "downside_ret", 'quantile']
+
+    Returns
+    -------
+    quantile_space : pd.DataFrame of dict
+
+    """
+    signal_data = signal_data.copy()
+    n_quantiles = signal_data['quantile'].max()
+    grouper = ['quantile']
+    grouper.append('trade_date')
+
+    group_mean_std = signal_data.groupby(grouper)[space_type + "_ret"].agg(['mean', 'std', 'count'])
+    indexes = []
+    quantile_daily_mean_std_dic = dict()
+    quantiles = np.unique(group_mean_std.index.get_level_values(level='quantile'))
+    for q in [1, n_quantiles]:  # loop for different quantiles
+        df_q = group_mean_std.loc[pd.IndexSlice[q, :], :]  # bug
+        df_q.index = df_q.index.droplevel(level='quantile')
+        indexes.append(pd.Series(df_q.index))
+        quantile_daily_mean_std_dic[q] = df_q
+    new_index = sorted(pd.concat(indexes).unique())
+    for q in [1, n_quantiles]:
+        quantile_daily_mean_std_dic[q] = quantile_daily_mean_std_dic[q].reindex(new_index).fillna(0)
+    return quantile_daily_mean_std_dic
+
+
+def cal_spaces_stats(space):
+    space_summary_table = pd.DataFrame()
+    if len(space["upside_space"]) > 0:
+        space["upside_space"] = space["upside_space"].values.reshape((-1, 1))
+        space["downside_space"] = space["downside_space"].values.reshape((-1, 1))
+        for space_type in ["upside_space", "downside_space"]:
+            mean = space[space_type].mean()
+            std = space[space_type].std()
+            space_summary_table[space_type + "_mean"] = [mean]
+            space_summary_table[space_type + "_std"] = [std]
+            space_summary_table[space_type + '_mean/std'] = [mean / std]
+            space_summary_table[space_type + "_max"] = [space[space_type].max()]
+            space_summary_table[space_type + "_min"] = [space[space_type].min()]
+            for percent in [25, 50, 75]:
+                space_summary_table[space_type + "_percentile" + str(percent)] = [np.percentile(space[space_type],
+                                                                                                percent)]
+            space_summary_table[space_type + '_occurance'] = [len(space[space_type])]
+        space_summary_table["up&down_space_mean_sum"] = space_summary_table["upside_space_mean"] + space_summary_table[
+            "downside_space_mean"]
+    return space_summary_table.T
+
+
+def space_stats(signal_data, is_event):
+    spaces = get_spaces(signal_data, is_event)
+    stats_result = []
+    for dir_type in spaces.keys():
+        stats = cal_spaces_stats(spaces[dir_type])
+        if len(stats) > 0:
+            stats.columns = [dir_type]
+            stats_result.append(stats)
+    if len(stats_result) > 0:
+        stats_result = pd.concat(stats_result, axis=1)
+    return stats_result
+
+
+def get_spaces(signal_data, is_event):
+    spaces = dict()
+    if not ("upside_ret" in signal_data.columns) or \
+            not ("downside_ret" in signal_data.columns):
+        return spaces
+    signal_data = signal_data.copy()
+    n_quantiles = signal_data['quantile'].max()
+
+    spaces = weighted_signal_ret_space(signal_data)
+    if is_event:
+        spaces["long_space"]["upside_space"] = signal_data[signal_data['signal'] == 1]["upside_ret"]
+        spaces["long_space"]["downside_space"] = signal_data[signal_data['signal'] == 1]["downside_ret"]
+        spaces["short_space"]["upside_space"] = signal_data[signal_data['signal'] == -1]["downside_ret"] * -1
+        spaces["short_space"]["downside_space"] = signal_data[signal_data['signal'] == -1]["upside_ret"] * -1
+
+    # quantile return space
+    if not is_event:
+        spaces["top_quantile_space"] = dict()
+        spaces["bottom_quantile_space"] = dict()
+        spaces["tmb_space"] = dict()
+
+        spaces["top_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == n_quantiles]["upside_ret"]
+        spaces["top_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == n_quantiles][
+            "downside_ret"]
+        spaces["bottom_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == 1]["upside_ret"]
+        spaces["bottom_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == 1]["downside_ret"]
+
+        tb_upside_mean_space = calc_tb_quantile_ret_space_mean_std(signal_data,
+                                                                   space_type="upside")
+        tb_downside_mean_space = calc_tb_quantile_ret_space_mean_std(signal_data,
+                                                                     space_type="downside")
+        spaces['tmb_space']["upside_space"] = pfm.calc_return_diff_mean_std(tb_upside_mean_space[n_quantiles],
+                                                                            tb_downside_mean_space[1])['mean_diff']
+        spaces['tmb_space']["downside_space"] = pfm.calc_return_diff_mean_std(tb_downside_mean_space[n_quantiles],
+                                                                              tb_upside_mean_space[1])['mean_diff']
+
+    return spaces
+
+
 def analysis(signal_data, is_event, period):
     if is_event:
-        return {"ret": return_stats(signal_data, True, period)}
+        return {
+            "ret": return_stats(signal_data, True, period),
+            "space": space_stats(signal_data, True)
+        }
     else:
         return {
             "ic": ic_stats(signal_data),
-            "ret": return_stats(signal_data, False, period)
+            "ret": return_stats(signal_data, False, period),
+            "space": space_stats(signal_data, False)
         }

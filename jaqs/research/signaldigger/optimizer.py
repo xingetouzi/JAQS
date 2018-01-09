@@ -14,19 +14,54 @@ target_types = {
             "long_short_ret",
             'top_quantile_ret',
             'bottom_quantile_ret',
-            "tmb_ret"]
+            "tmb_ret"],
+        "space": [
+            'long_space',
+            'short_space',
+            'long_short_space',
+            "top_quantile_space",
+            "bottom_quantile_space",
+            "tmb_space"
+        ]
     },
     "event": {
         "ret": [
             "long_ret",
             "short_ret",
             "long_short_ret",
-        ]}
+        ],
+        "space": [
+            'long_space',
+            'short_space',
+            'long_short_space',
+        ]
+    }
 }
 
 targets = {
     "ic": ["IC Mean", "IC Std.", "t-stat(IC)", "p-value(IC)", "IC Skew", "IC Kurtosis", "Ann. IR"],
     "ret": ['t-stat', "p-value", "skewness", "kurtosis", "Ann. Ret", "Ann. Vol", "Ann. IR", "occurance"],
+    "space":[
+                'upside_space_mean',
+                'upside_space_std',
+                'upside_space_mean/std',
+                'upside_space_max',
+                'upside_space_min',
+                'upside_space_percentile25',
+                'upside_space_percentile50',
+                'upside_space_percentile75',
+                'upside_space_occurance',
+                'downside_space_mean',
+                'downside_space_std',
+                'downside_space_mean/std',
+                'downside_space_max',
+                'downside_space_min',
+                'downside_space_percentile25',
+                'downside_space_percentile50',
+                'downside_space_percentile75',
+                'downside_space_occurance',
+                'up&down_space_mean_sum',
+    ]
 }
 
 
@@ -38,6 +73,8 @@ class Optimizer(object):
     :param name: str (N) 信号的名称
     :param price: dataFrame (N) 价格与ret不能同时存在
     :param ret: dataFrame (N) 收益
+    :param high: dataFrame (N) 最高价　用于计算上行收益空间
+    :param low: dataFrame (N) 最低价　用于计算下行收益空间
     :param benchmark_price: dataFrame (N) 基准价格　若不为空收益计算模式为相对benchmark的收益
     :param period: int (5) 选股持有期
     :param n_quantiles: int (5)
@@ -57,6 +94,8 @@ class Optimizer(object):
                  name=None,
                  price=None,
                  ret=None,
+                 high=None,
+                 low=None,
                  benchmark_price=None,
                  period=5,
                  n_quantiles=5,
@@ -75,6 +114,8 @@ class Optimizer(object):
         self.name = name if name else formula
         self.price = price
         self.ret = ret
+        self.high = high
+        self.low = low
         if self.price is None and self.ret is None:
             try:
                 self.price = dataview.get_ts('close_adj')
@@ -113,9 +154,13 @@ class Optimizer(object):
                 if not (target in targets["ret"]):
                     legal = False
                     print("可选的优化目标仅能从%s选取" % (str(targets["ret"])))
+            elif target_type in target_types["event"]["space"]:
+                if not (target in targets["space"]):
+                    legal = False
+                    print("可选的优化目标仅能从%s选取" % (str(targets["space"])))
             else:
                 legal = False
-                print("可选的优化类型仅能从%s选取" % (str(target_types["event"]["ret"])))
+                print("可选的优化类型仅能从%s选取" % (str(target_types["event"]["ret"] + target_types["event"]["space"])))
         else:
             if target_type in target_types["factor"]["ret"]:
                 if not (target in targets["ret"]):
@@ -125,8 +170,13 @@ class Optimizer(object):
                 if not (target in targets["ic"]):
                     legal = False
                     print("可选的优化目标仅能从%s选取" % (str(targets["ic"])))
+            elif target_type in target_types["factor"]["space"]:
+                if not (target in targets["space"]):
+                    legal = False
+                    print("可选的优化目标仅能从%s选取" % (str(targets["space"])))
             else:
-                print("可选的优化类型仅能从%s选取" % (str(target_types["factor"]["ret"] + target_types["factor"]["ic"])))
+                print("可选的优化类型仅能从%s选取" % (str(target_types["factor"]["ret"] + target_types["factor"]["ic"] + \
+                                              + target_types["factor"]["space"])))
         return legal
 
     def enumerate_optimizer(self,
@@ -191,6 +241,8 @@ class Optimizer(object):
             signal,
             price=self.price,
             ret=self.ret,
+            high=self.high,
+            low=self.low,
             n_quantiles=self.n_quantiles,
             mask=self.mask,
             can_enter=self.can_enter,
