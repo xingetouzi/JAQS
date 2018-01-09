@@ -2,8 +2,7 @@
 
 from .digger import SignalDigger
 from .optimizer import Optimizer
-from . import process,multi_factor
-from .analysis import analysis
+from . import process,multi_factor,analysis
 
 
-__all__ = ['SignalDigger',"Optimizer","analysis"]
+__all__ = ['SignalDigger',"Optimizer"]
