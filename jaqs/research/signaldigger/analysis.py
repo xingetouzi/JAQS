@@ -168,22 +168,22 @@ def get_rets(signal_data, is_event):
     n_quantiles = signal_data['quantile'].max()
 
     if is_event:
-        rets["long_ret"] = signal_data[signal_data['signal'] == 1]["return"]
-        rets['short_ret'] = signal_data[signal_data['signal'] == -1]["return"] * -1
+        rets["long_ret"] = signal_data[signal_data['signal'] == 1]["return"].dropna()
+        rets['short_ret'] = signal_data[signal_data['signal'] == -1]["return"].dropna() * -1
     else:
         rets['long_ret'] = \
-            pfm.calc_period_wise_weighted_signal_return(signal_data, weight_method='long_only')
+            pfm.calc_period_wise_weighted_signal_return(signal_data, weight_method='long_only').dropna()
         rets['short_ret'] = \
-            pfm.calc_period_wise_weighted_signal_return(signal_data, weight_method='short_only')
+            pfm.calc_period_wise_weighted_signal_return(signal_data, weight_method='short_only').dropna()
     rets['long_short_ret'] = \
-        pfm.calc_period_wise_weighted_signal_return(signal_data, weight_method='long_short')
+        pfm.calc_period_wise_weighted_signal_return(signal_data, weight_method='long_short').dropna()
     # quantile return
     if not is_event:
-        rets['top_quantile_ret'] = signal_data[signal_data['quantile'] == n_quantiles]["return"]
-        rets['bottom_quantile_ret'] = signal_data[signal_data['quantile'] == 1]["return"]
+        rets['top_quantile_ret'] = signal_data[signal_data['quantile'] == n_quantiles]["return"].dropna()
+        rets['bottom_quantile_ret'] = signal_data[signal_data['quantile'] == 1]["return"].dropna()
         period_wise_quantile_ret_stats = pfm.calc_quantile_return_mean_std(signal_data, time_series=True)
         rets['tmb_ret'] = pfm.calc_return_diff_mean_std(period_wise_quantile_ret_stats[n_quantiles],
-                                                        period_wise_quantile_ret_stats[1])['mean_diff']
+                                                        period_wise_quantile_ret_stats[1])['mean_diff'].dropna()
 
     return rets
 
@@ -236,7 +236,7 @@ def weighted_signal_ret_space(signal_data):
     for dir_type in ["long_space", "short_space", "long_short_space"]:
         for space_type in ["upside_space", "downside_space"]:
             space[dir_type][space_type] = space[dir_type][space_type].groupby(level='trade_date').sum()
-            space[dir_type][space_type] = pd.DataFrame(space[dir_type][space_type])
+            space[dir_type][space_type] = pd.DataFrame(space[dir_type][space_type]).dropna()
 
     return space
 
@@ -321,10 +321,10 @@ def get_spaces(signal_data, is_event):
 
     spaces = weighted_signal_ret_space(signal_data)
     if is_event:
-        spaces["long_space"]["upside_space"] = signal_data[signal_data['signal'] == 1]["upside_ret"]
-        spaces["long_space"]["downside_space"] = signal_data[signal_data['signal'] == 1]["downside_ret"]
-        spaces["short_space"]["upside_space"] = signal_data[signal_data['signal'] == -1]["downside_ret"] * -1
-        spaces["short_space"]["downside_space"] = signal_data[signal_data['signal'] == -1]["upside_ret"] * -1
+        spaces["long_space"]["upside_space"] = signal_data[signal_data['signal'] == 1]["upside_ret"].dropna()
+        spaces["long_space"]["downside_space"] = signal_data[signal_data['signal'] == 1]["downside_ret"].dropna()
+        spaces["short_space"]["upside_space"] = signal_data[signal_data['signal'] == -1]["downside_ret"].dropna() * -1
+        spaces["short_space"]["downside_space"] = signal_data[signal_data['signal'] == -1]["upside_ret"].dropna() * -1
 
     # quantile return space
     if not is_event:
@@ -332,20 +332,20 @@ def get_spaces(signal_data, is_event):
         spaces["bottom_quantile_space"] = dict()
         spaces["tmb_space"] = dict()
 
-        spaces["top_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == n_quantiles]["upside_ret"]
+        spaces["top_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == n_quantiles]["upside_ret"].dropna()
         spaces["top_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == n_quantiles][
-            "downside_ret"]
-        spaces["bottom_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == 1]["upside_ret"]
-        spaces["bottom_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == 1]["downside_ret"]
+            "downside_ret"].dropna()
+        spaces["bottom_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == 1]["upside_ret"].dropna()
+        spaces["bottom_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == 1]["downside_ret"].dropna()
 
         tb_upside_mean_space = calc_tb_quantile_ret_space_mean_std(signal_data,
                                                                    space_type="upside")
         tb_downside_mean_space = calc_tb_quantile_ret_space_mean_std(signal_data,
                                                                      space_type="downside")
         spaces['tmb_space']["upside_space"] = pfm.calc_return_diff_mean_std(tb_upside_mean_space[n_quantiles],
-                                                                            tb_downside_mean_space[1])['mean_diff']
+                                                                            tb_downside_mean_space[1])['mean_diff'].dropna()
         spaces['tmb_space']["downside_space"] = pfm.calc_return_diff_mean_std(tb_downside_mean_space[n_quantiles],
-                                                                              tb_upside_mean_space[1])['mean_diff']
+                                                                              tb_upside_mean_space[1])['mean_diff'].dropna()
 
     return spaces
 

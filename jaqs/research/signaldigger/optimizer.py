@@ -72,8 +72,8 @@ targets = {
 class Optimizer(object):
     '''
     :param dataview: 包含了计算公式所需要的所有数据的jaqs.data.DataView对象
-    :param formula: str 需要优化的公式：如'(open - Delay(close, l1)) / Delay(close, l2)'
-    :param params: dict 需要优化的参数范围：如{"l1"：range(1,10,1),"l2":range(1,10,1)}
+    :param formula: str(N) 需要优化的公式：如'(open - Delay(close, l1)) / Delay(close, l2)'
+    :param params: dict(N) 需要优化的参数范围：如{"LEN1"：range(1,10,1),"LEN2":range(1,10,1)}
     :param name: str (N) 信号的名称
     :param price: dataFrame (N) 价格与ret不能同时存在
     :param ret: dataFrame (N) 收益
@@ -93,7 +93,7 @@ class Optimizer(object):
 
     def __init__(self,
                  dataview=None,
-                 formula="",
+                 formula=None,
                  params=None,
                  name=None,
                  price=None,
@@ -114,7 +114,8 @@ class Optimizer(object):
         self.dataview = dataview
         self.formula = formula
         self.params = params
-        self._judge_params()
+        if self.formula is not None:
+            self._judge_params()
         self.name = name if name else formula
         self.price = price
         self.ret = ret
@@ -146,6 +147,10 @@ class Optimizer(object):
 
     # 判断参数命名的规范性
     def _judge_params(self):
+        if self.params is None:
+            raise ValueError("未给优化器提供优化空间(需要参数params)")
+        if not isinstance(self.params, dict):
+            raise ValueError("优化空间参数不符合格式要求:如{'LEN1'：range(1,10,1),'LEN2':range(1,10,1)}")
         for para in self.params.keys():
             if len(para) < 2 or not para.isupper():
                 raise ValueError("参数变量的命名不符合要求!参数名称需全部由大写英文字母组成,且字母数不少于2")
@@ -187,7 +192,8 @@ class Optimizer(object):
                     legal = False
                     print("可选的优化目标仅能从%s选取" % (str(targets["space"])))
             else:
-                print("可选的优化类型仅能从%s选取" % (str(target_types["factor"]["ret"] + target_types["factor"]["ic"] + target_types["factor"]["space"])))
+                print("可选的优化类型仅能从%s选取" % (
+                str(target_types["factor"]["ret"] + target_types["factor"]["ic"] + target_types["factor"]["space"])))
         return legal
 
     def enumerate_optimizer(self,
@@ -271,7 +277,7 @@ class Optimizer(object):
     def cal_perf(self,
                  signal_data,
                  in_sample_range=None,
-                 constraints = None):
+                 constraints=None):
         '''
         :param signal_data:
         :param in_sample_range: like [20100312,20170405] 样本内范围起止时间
