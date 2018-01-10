@@ -7,7 +7,11 @@ from itertools import product
 
 target_types = {
     'factor': {
-        "ic": ["ic"],
+        "ic": [
+            "return_ic",
+            "upside_ret_ic",
+            "downside_ret_ic"
+        ],
         "ret": [
             "long_ret",
             "short_ret",
@@ -41,26 +45,26 @@ target_types = {
 targets = {
     "ic": ["IC Mean", "IC Std.", "t-stat(IC)", "p-value(IC)", "IC Skew", "IC Kurtosis", "Ann. IR"],
     "ret": ['t-stat', "p-value", "skewness", "kurtosis", "Ann. Ret", "Ann. Vol", "Ann. IR", "occurance"],
-    "space":[
-                'upside_space_mean',
-                'upside_space_std',
-                'upside_space_mean/std',
-                'upside_space_max',
-                'upside_space_min',
-                'upside_space_percentile25',
-                'upside_space_percentile50',
-                'upside_space_percentile75',
-                'upside_space_occurance',
-                'downside_space_mean',
-                'downside_space_std',
-                'downside_space_mean/std',
-                'downside_space_max',
-                'downside_space_min',
-                'downside_space_percentile25',
-                'downside_space_percentile50',
-                'downside_space_percentile75',
-                'downside_space_occurance',
-                'up&down_space_mean_sum',
+    "space": [
+        'upside_space_mean',
+        'upside_space_std',
+        'upside_space_mean/std',
+        'upside_space_max',
+        'upside_space_min',
+        'upside_space_percentile25',
+        'upside_space_percentile50',
+        'upside_space_percentile75',
+        'upside_space_occurance',
+        'downside_space_mean',
+        'downside_space_std',
+        'downside_space_mean/std',
+        'downside_space_max',
+        'downside_space_min',
+        'downside_space_percentile25',
+        'downside_space_percentile50',
+        'downside_space_percentile75',
+        'downside_space_occurance',
+        'up&down_space_mean_sum',
     ]
 }
 
@@ -149,6 +153,14 @@ class Optimizer(object):
     # 判断target合法性
     def _judge_target(self, target_type, target):
         legal = True
+        # 判断所提供的输入数据是否支持空间分析
+        if self.high is None or self.low is None:
+            if (target_type in target_types["factor"]["space"]) or \
+                    (target_types in ["upside_ret_ic", "downside_ret_ic"]) or \
+                    (target in targets["space"]):
+                legal = False
+                print("需要在Optimizer中传入[high]&[low],以支持收益空间分析和优化")
+        # 判断是否target/target_type参数在可选的选项内
         if self.is_event:
             if target_type in target_types["event"]["ret"]:
                 if not (target in targets["ret"]):
@@ -175,8 +187,7 @@ class Optimizer(object):
                     legal = False
                     print("可选的优化目标仅能从%s选取" % (str(targets["space"])))
             else:
-                print("可选的优化类型仅能从%s选取" % (str(target_types["factor"]["ret"] + target_types["factor"]["ic"] + \
-                                              + target_types["factor"]["space"])))
+                print("可选的优化类型仅能从%s选取" % (str(target_types["factor"]["ret"] + target_types["factor"]["ic"] + target_types["factor"]["space"])))
         return legal
 
     def enumerate_optimizer(self,
@@ -198,12 +209,15 @@ class Optimizer(object):
                 return []
             if target_type in (target_types["factor"]["ic"]):
                 order_index = "ic"
-            else:
+            elif target_type in (target_types["factor"]["ret"]):
                 order_index = "ret"
+            else:
+                order_index = "space"
             ordered_perf = self.all_signals_perf.values()
             return sorted(ordered_perf,
                           key=lambda x: x[order_index].loc[target, target_type],
                           reverse=(ascending == False))
+        return []
 
     def get_all_signals(self):
         if self.all_signals is None:
@@ -225,7 +239,7 @@ class Optimizer(object):
         self.get_all_signals()
         if self.all_signals_perf is None or \
                 (self.in_sample_range != in_sample_range) or \
-                (len(set(self.all_signals_perf.keys())-set(self.all_signals.keys())) != 0):
+                (len(set(self.all_signals_perf.keys()) - set(self.all_signals.keys())) != 0):
             self.all_signals_perf = dict()
             for sig_name in self.all_signals.keys():
                 perf = self.cal_perf(self.all_signals[sig_name], in_sample_range)
@@ -253,6 +267,7 @@ class Optimizer(object):
             commission=self.commission)
         return self.signal_digger.signal_data
 
+    # TODO 输入绩效要求，过滤掉不符合要求的结果
     def cal_perf(self, signal_data, in_sample_range=None):
         perf = None
         if signal_data is not None:

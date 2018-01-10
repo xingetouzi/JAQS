@@ -130,11 +130,23 @@ def cal_rets_stats(rets, period):
 
 
 def ic_stats(signal_data):
-    ic = pfm.calc_signal_ic(signal_data)
-    ic = ic.dropna()
-    ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
-    ic_summary_table = pfm.calc_ic_stats_table(ic).T
-    return ic_summary_table
+    if not ("upside_ret" in signal_data.columns) or \
+            not ("downside_ret" in signal_data.columns):
+        items = ["return"]
+    else:
+        items = ["return","upside_ret","downside_ret"]
+    stats = []
+    for item in items:
+        data = signal_data[["signal", item]]
+        data.columns = ["signal", "return"]
+        ic = pfm.calc_signal_ic(data).dropna()
+        ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
+        ic_summary_table = pfm.calc_ic_stats_table(ic).T
+        ic_summary_table.columns = [item+"_ic"]
+        stats.append(ic_summary_table)
+    if len(stats) > 0:
+        stats = pd.concat(stats, axis=1)
+    return stats
 
 
 def return_stats(signal_data, is_event, period):
@@ -253,7 +265,6 @@ def calc_tb_quantile_ret_space_mean_std(signal_data,
     group_mean_std = signal_data.groupby(grouper)[space_type + "_ret"].agg(['mean', 'std', 'count'])
     indexes = []
     quantile_daily_mean_std_dic = dict()
-    quantiles = np.unique(group_mean_std.index.get_level_values(level='quantile'))
     for q in [1, n_quantiles]:  # loop for different quantiles
         df_q = group_mean_std.loc[pd.IndexSlice[q, :], :]  # bug
         df_q.index = df_q.index.droplevel(level='quantile')
