@@ -365,7 +365,7 @@ class SignalDigger(object):
         monthly_ic = pfm.mean_information_coefficient(ic, "M")
 
         if self.output_format:
-            ic_summary_table = pfm.calc_ic_stats_table(ic)
+            ic_summary_table = pfm.calc_ic_stats_table(ic.dropna())
             plotting.plot_information_table(ic_summary_table)
 
             columns_wide = 2

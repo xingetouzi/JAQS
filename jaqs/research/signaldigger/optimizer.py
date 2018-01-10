@@ -268,7 +268,18 @@ class Optimizer(object):
         return self.signal_digger.signal_data
 
     # TODO 输入绩效要求，过滤掉不符合要求的结果
-    def cal_perf(self, signal_data, in_sample_range=None):
+    def cal_perf(self,
+                 signal_data,
+                 in_sample_range=None,
+                 constraints = None):
+        '''
+        :param signal_data:
+        :param in_sample_range: like [20100312,20170405] 样本内范围起止时间
+        :param constraints: like [{"target_type":"long_ret",
+                                   "target":"Ann. IR",
+                                   "condition":}]
+        :return:
+        '''
         perf = None
         if signal_data is not None:
             if in_sample_range is not None:

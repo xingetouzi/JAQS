@@ -473,9 +473,11 @@ def period_wise_ret_to_cum(ret, period, compound=True):
             return ret.add(1).cumprod().sub(1.0)
 
         # invest in each portfolio separately
+
         periods_index = np.arange(len(ret.index)) // period
-        period_portfolios = ret.groupby(by=periods_index, axis=0).apply(lambda ser: pd.DataFrame(np.diag(ser)))
+        period_portfolios = ret.groupby(by=periods_index, axis=0).apply(lambda ser: pd.DataFrame(np.diag(ser))).fillna(0)
         period_portfolios.index = ret.index
+
 
         # cumulate returns separately
         if compound:
