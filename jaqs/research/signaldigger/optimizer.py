@@ -1,9 +1,10 @@
 # encoding=utf-8
 # 参数优化器
 
-from .digger import SignalDigger
+
 from .analysis import analysis
 from itertools import product
+from .signal_creator import SignalCreator
 
 target_types = {
     'factor': {
@@ -117,30 +118,30 @@ class Optimizer(object):
         if self.formula is not None:
             self._judge_params()
         self.name = name if name else formula
-        self.price = price
-        self.ret = ret
-        self.high = high
-        self.low = low
-        if self.price is None and self.ret is None:
+        if price is None and ret is None:
             try:
-                self.price = dataview.get_ts('close_adj')
+                price = dataview.get_ts('close_adj')
             except:
                 raise ValueError("One of price / ret must be provided.")
-        self.benchmark_price = benchmark_price
         self.period = period
-        self.n_quantiles = n_quantiles
         if is_event:
-            self.n_quantiles = 1
-        else:
-            self.n_quantiles = n_quantiles
-        self.mask = mask
-        self.can_enter = can_enter
-        self.can_exit = can_exit
-        self.forward = forward
-        self.commission = commission
+            n_quantiles = 1
         self.is_event = is_event
         self.is_quarterly = is_quarterly
-        self.signal_digger = SignalDigger(output_format=None)
+        self.signal_creator = SignalCreator(
+            price,
+            ret,
+            high,
+            low,
+            n_quantiles,
+            mask,
+            can_enter,
+            can_exit,
+            period,
+            benchmark_price,
+            forward,
+            commission
+        )
         self.all_signals = None
         self.all_signals_perf = None
         self.in_sample_range = None
@@ -159,7 +160,7 @@ class Optimizer(object):
     def _judge_target(self, target_type, target):
         legal = True
         # 判断所提供的输入数据是否支持空间分析
-        if self.high is None or self.low is None:
+        if self.signal_creator.high is None or self.signal_creator.low is None:
             if (target_type in target_types["factor"]["space"]) or \
                     (target_types in ["upside_ret_ic", "downside_ret_ic"]) or \
                     (target in targets["space"]):
@@ -193,7 +194,8 @@ class Optimizer(object):
                     print("可选的优化目标仅能从%s选取" % (str(targets["space"])))
             else:
                 print("可选的优化类型仅能从%s选取" % (
-                str(target_types["factor"]["ret"] + target_types["factor"]["ic"] + target_types["factor"]["space"])))
+                    str(target_types["factor"]["ret"] + target_types["factor"]["ic"] + target_types["factor"][
+                        "space"])))
         return legal
 
     def enumerate_optimizer(self,
@@ -257,21 +259,7 @@ class Optimizer(object):
             self.in_sample_range = in_sample_range
 
     def cal_signal(self, signal):
-        self.signal_digger.process_signal_before_analysis(
-            signal,
-            price=self.price,
-            ret=self.ret,
-            high=self.high,
-            low=self.low,
-            n_quantiles=self.n_quantiles,
-            mask=self.mask,
-            can_enter=self.can_enter,
-            can_exit=self.can_exit,
-            period=self.period,
-            benchmark_price=self.benchmark_price,
-            forward=self.forward,
-            commission=self.commission)
-        return self.signal_digger.signal_data
+        return self.signal_creator.get_signal_data(signal)
 
     # TODO 输入绩效要求，过滤掉不符合要求的结果
     def cal_perf(self,

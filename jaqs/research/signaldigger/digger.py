@@ -43,6 +43,7 @@ class SignalDigger(object):
         self.ic_report_data = dict()
         self.fig_data = dict()
         self.fig_objs = dict()
+        self.ret = None
 
     def process_signal_before_analysis(self,
                                        signal, price=None, ret=None, benchmark_price=None,
@@ -183,6 +184,14 @@ class SignalDigger(object):
             signal = signal.shift(self.period)
             can_enter = can_enter.shift(self.period)
             mask = mask.shift(self.period)
+
+        self.ret = dict()
+        self.ret["return"] = residual_ret
+        if upside_ret is not None:
+            self.ret["upside_ret"] = upside_ret
+        if downside_ret is not None:
+            self.ret["downside_ret"] = downside_ret
+
 
         # ----------------------------------------------------------------------
         # get masks
