@@ -1,12 +1,19 @@
 # encoding: UTF-8
+"""
+PortfolioManager helps manage strategy's trades, orders, positions, etc.
+
+It binds with a strategy and updates trades/orders/positions when relevant callback
+functions are called.
+
+"""
 
 from __future__ import print_function
-import copy
-from collections import defaultdict
 
+import copy
+
+import jaqs.trade
 from jaqs.data.basic import OrderStatusInd, Trade, Task, Order, Position, TradeStat
 from jaqs.trade import common
-import jaqs.trade
 
 
 class PortfolioManager(object):
@@ -39,6 +46,7 @@ class PortfolioManager(object):
         self.orders = dict()
         self.tasks = dict()
         self.trades = []
+        self.cash = 0.0
         
         self.positions = dict()
         self.tradestat = dict()
@@ -46,6 +54,8 @@ class PortfolioManager(object):
         self.holding_securities = set()
     
     def init_from_config(self, props):
+        self.cash = props.get("init_balance", 0.0)
+        
         self._hook_strategy()
         if isinstance(self.ctx.trade_api, jaqs.trade.RealTimeTradeApi):
             self.init_positions()
@@ -339,6 +349,8 @@ class PortfolioManager(object):
     
     def _update_task_if_done(self, task_id):
         task = self.get_task(task_id)
+        if task is None:
+            return
         if task.function_name == 'place_order':
             order = task.data
             if order.is_finished:
@@ -511,9 +523,34 @@ class PortfolioManager(object):
         if not (ind.entrust_no == 101010 or ind.entrust_no == 202020):  # trades generate by system
             self._update_task_if_done(ind.task_id)
         
+        # Update cash
+        self._update_cash_from_trade_ind(ind)
+        
         # hook:
         self.original_on_trade(ind)
     
+    def _update_cash_from_trade_ind(self, ind):
+        """
+        
+        Parameters
+        ----------
+        ind : Trade
+
+        """
+        curr_pos = self.get_pos(ind.symbol)
+        closed_size = min((abs(curr_pos), ind.fill_size))
+        turnover = ind.fill_price * closed_size
+        if common.ORDER_ACTION.is_positive(ind.entrust_action):
+            #turnover = ind.fill_size * ind.fill_price
+            self.cash -= turnover
+        else:
+            self.cash += turnover
+        
+        # TODO
+        if self.cash < 0:
+            pass
+            #print("WARNING: cash is not enough when executing trade\n", ind)
+        
     def _update_order_from_trade_ind(self, ind):
         order = self.orders.get(ind.entrust_no)
         if order is None:

@@ -94,6 +94,8 @@ class DualThrust(EventDrivenStrategy):
         if self.bufferCount <= self.bufferSize:
             return
         self.quote = quote.get(self.symbol)
+        if self.quote.close < 1e-3:
+            return
 
         if self.quote.time > 90100 and self.quote.time <= 142800:
             if self.pos == 0:
@@ -150,7 +152,7 @@ props = {
     "k2": 0.2,
     "bar_type": "1M",
     "init_balance": 3e4,
-    "commission_rate": 0.0
+    "commission_rate": 1e-4
 }
 props.update(data_config)
 props.update(trade_config)

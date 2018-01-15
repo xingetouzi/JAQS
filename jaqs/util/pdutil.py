@@ -10,7 +10,7 @@ def to_quantile(df, n_quantiles=5, axis=1):
     """
     Convert cross-section values to the quantile number they belong.
     Small values get small quantile numbers.
-
+    
     Parameters
     ----------
     df : DataFrame
@@ -19,10 +19,12 @@ def to_quantile(df, n_quantiles=5, axis=1):
         The number of quantile to be divided to.
     axis : int
         Axis to apply quantilize.
+
     Returns
     -------
     res : DataFrame
         index date, column symbols
+
     """
     # TODO: unnecesssary warnings
     # import warnings

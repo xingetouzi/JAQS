@@ -23,9 +23,8 @@ def calc_signal_ic(signal_data):
     -------
     ic : pd.DataFrame
         Spearman Rank correlation between signal and provided forward returns.
-
+        
     """
-
     def src_ic(df):
         _ic = scst.spearmanr(df['signal'], df['return'])[0]
         return _ic
@@ -106,9 +105,8 @@ def calc_period_wise_weighted_signal_return(signal_data, weight_method):
     -------
     res : pd.DataFrame
         Period wise period_wise_returns of dollar neutral portfolio weighted by signal value.
-
+        
     """
-
     def calc_norm_weights(ser, method):
         if method == 'equal_weight':
             ser.loc[:] = 1.0 / len(ser)
