@@ -958,6 +958,7 @@ class DataView(object):
                     'sw4': ('SW', 4),
                     'zz1': ('ZZ', 1),
                     'zz2': ('ZZ', 2)}
+
         for field in group_fields:
             type_, level = data_map[field]
             df = self.data_api.get_industry_daily(symbol=','.join(self.symbol),

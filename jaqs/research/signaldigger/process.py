@@ -152,7 +152,8 @@ def _prepare_data(pools,
             for field in fields:
                 if not (field in dv.fields):
                     dv.add_field(field, ds)
-            dv._prepare_group([group_field])
+            if not (group_field in dv.fields):
+                dv._prepare_group([group_field])
             if not ('LFLO' in dv.fields):
                 dv.add_formula('LFLO', "Log(float_mv)", is_quarterly=False)
             return dv
