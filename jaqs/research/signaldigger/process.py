@@ -36,9 +36,10 @@ def standardize(factor_df):
 
 
 # 横截面去极值 - 对Dataframe数据
-def winsorize(factor_df,alpha=0.025):
+def winsorize(factor_df,alpha=0.05):
     """
     对因子值做去极值操作
+    :param alpha: 极值范围
     :param factor_df: 因子值 (pandas.Dataframe类型),index为datetime, colunms为股票代码。
                       形如:
                                   　AAPL	　　　     BA	　　　CMG	　　   DAL	      LULU	　　
@@ -52,7 +53,7 @@ def winsorize(factor_df,alpha=0.025):
     """
 
     def winsorize_series(se):
-        q = se.quantile([alpha, 1-alpha])
+        q = se.quantile([alpha/2, 1-alpha/2])
         se[se < q.iloc[0]] = q.iloc[0]
         se[se > q.iloc[1]] = q.iloc[1]
         return se
