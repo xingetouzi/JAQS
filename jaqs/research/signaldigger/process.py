@@ -218,7 +218,7 @@ def neutralize(factor_df,
     # factor_df = factor_df.loc[:, pools]
 
     # 剔除过多值为空的截面
-    factor_df = factor_df.dropna(thresh=len(factor_df.columns) * 1)  # 删除全为空的截面
+    factor_df = factor_df.dropna(how="all")  # 删除全为空的截面
     start = factor_df.index[0]
     end = factor_df.index[-1]
     dv = _prepare_data(pools, start, end, group_field, dv=dv, ds=ds)
