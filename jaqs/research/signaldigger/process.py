@@ -109,6 +109,12 @@ def _prepare_data(pools,
                   group_field="sw1",
                   dv=None,
                   ds=None):
+    if len(pools) == 0:
+        raise ValueError("pools(股票池)不能为空.")
+
+    if end < start:
+        raise ValueError("end 不能小于 start.")
+
     if not (group_field in ["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"]):
         raise ValueError("group_field 只能为%s" % (str(["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"])))
 
