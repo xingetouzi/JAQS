@@ -130,23 +130,32 @@ def cal_rets_stats(rets, period):
 
 
 def ic_stats(signal_data):
-    if not ("upside_ret" in signal_data.columns) or \
-            not ("downside_ret" in signal_data.columns):
-        items = ["return"]
-    else:
-        items = ["return","upside_ret","downside_ret"]
+    ICs = get_ics(signal_data)
     stats = []
-    for item in items:
-        data = signal_data[["signal", item]]
-        data.columns = ["signal", "return"]
-        ic = pfm.calc_signal_ic(data).dropna()
+    for item in ICs.keys():
+        ic = ICs[item]
         ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
         ic_summary_table = pfm.calc_ic_stats_table(ic).T
-        ic_summary_table.columns = [item+"_ic"]
+        ic_summary_table.columns = [item]
         stats.append(ic_summary_table)
     if len(stats) > 0:
         stats = pd.concat(stats, axis=1)
     return stats
+
+
+def get_ics(signal_data):
+    ICs = dict()
+    if not ("upside_ret" in signal_data.columns) or \
+            not ("downside_ret" in signal_data.columns):
+        items = ["return"]
+    else:
+        items = ["return", "upside_ret", "downside_ret"]
+    for item in items:
+        data = signal_data[["signal", item]]
+        data.columns = ["signal", "return"]
+        ICs[item + "_ic"] = pfm.calc_signal_ic(data).dropna()
+
+    return ICs
 
 
 def return_stats(signal_data, is_event, period):
@@ -332,20 +341,25 @@ def get_spaces(signal_data, is_event):
         spaces["bottom_quantile_space"] = dict()
         spaces["tmb_space"] = dict()
 
-        spaces["top_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == n_quantiles]["upside_ret"].dropna()
+        spaces["top_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == n_quantiles][
+            "upside_ret"].dropna()
         spaces["top_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == n_quantiles][
             "downside_ret"].dropna()
-        spaces["bottom_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == 1]["upside_ret"].dropna()
-        spaces["bottom_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == 1]["downside_ret"].dropna()
+        spaces["bottom_quantile_space"]["upside_space"] = signal_data[signal_data['quantile'] == 1][
+            "upside_ret"].dropna()
+        spaces["bottom_quantile_space"]["downside_space"] = signal_data[signal_data['quantile'] == 1][
+            "downside_ret"].dropna()
 
         tb_upside_mean_space = calc_tb_quantile_ret_space_mean_std(signal_data,
                                                                    space_type="upside")
         tb_downside_mean_space = calc_tb_quantile_ret_space_mean_std(signal_data,
                                                                      space_type="downside")
         spaces['tmb_space']["upside_space"] = pfm.calc_return_diff_mean_std(tb_upside_mean_space[n_quantiles],
-                                                                            tb_downside_mean_space[1])['mean_diff'].dropna()
+                                                                            tb_downside_mean_space[1])[
+            'mean_diff'].dropna()
         spaces['tmb_space']["downside_space"] = pfm.calc_return_diff_mean_std(tb_downside_mean_space[n_quantiles],
-                                                                              tb_upside_mean_space[1])['mean_diff'].dropna()
+                                                                              tb_upside_mean_space[1])[
+            'mean_diff'].dropna()
 
     return spaces
 
