@@ -36,7 +36,7 @@ def standardize(factor_df):
 
 
 # 横截面去极值 - 对Dataframe数据
-def winsorize(factor_df,alpha=0.05):
+def winsorize(factor_df, alpha=0.05):
     """
     对因子值做去极值操作
     :param alpha: 极值范围
@@ -53,7 +53,7 @@ def winsorize(factor_df,alpha=0.05):
     """
 
     def winsorize_series(se):
-        q = se.quantile([alpha/2, 1-alpha/2])
+        q = se.quantile([alpha / 2, 1 - alpha / 2])
         se[se < q.iloc[0]] = q.iloc[0]
         se[se > q.iloc[1]] = q.iloc[1]
         return se
@@ -109,7 +109,6 @@ def _prepare_data(pools,
                   group_field="sw1",
                   dv=None,
                   ds=None):
-
     if not (group_field in ["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"]):
         raise ValueError("group_field 只能为%s" % (str(["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"])))
 
@@ -128,7 +127,7 @@ def _prepare_data(pools,
                       'vwap', 'vwap_adj']
             for field in fields:
                 if not (field in dv.fields):
-                    dv.add_field(field,ds)
+                    dv.add_field(field, ds)
             dv._prepare_group([group_field])
             if not ('LFLO' in dv.fields):
                 dv.add_formula('LFLO', "Log(float_mv)", is_quarterly=False)
@@ -184,9 +183,10 @@ def neutralize(factor_df,
 
     # 剔除有过多无效数据的个股
     factor_df = jutil.fillinf(factor_df)
-    empty_data = pd.isnull(factor_df).sum()
-    pools = empty_data[empty_data < len(factor_df) * 0.1].index  # 保留空值比例低于0.1的股票
-    factor_df = factor_df.loc[:, pools]
+    # empty_data = pd.isnull(factor_df).sum()
+    # pools = empty_data[empty_data < len(factor_df) * 0.1].index  # 保留空值比例低于0.1的股票
+    pools = factor_df.columns
+    # factor_df = factor_df.loc[:, pools]
 
     # 剔除过多值为空的截面
     factor_df = factor_df.dropna(thresh=len(factor_df.columns) * 0.9)  # 保留空值比例低于0.9的截面
