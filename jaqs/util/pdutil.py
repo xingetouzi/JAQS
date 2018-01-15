@@ -10,7 +10,7 @@ def to_quantile(df, n_quantiles=5, axis=1):
     """
     Convert cross-section values to the quantile number they belong.
     Small values get small quantile numbers.
-    
+
     Parameters
     ----------
     df : DataFrame
@@ -19,12 +19,10 @@ def to_quantile(df, n_quantiles=5, axis=1):
         The number of quantile to be divided to.
     axis : int
         Axis to apply quantilize.
-
     Returns
     -------
     res : DataFrame
         index date, column symbols
-
     """
     # TODO: unnecesssary warnings
     # import warnings
@@ -42,3 +40,18 @@ def group_df_to_dict(df, by):
     gp = df.groupby(by=by)
     res = {key: value for key, value in gp}
     return res
+
+
+def rank_with_mask(df, axis=1, mask=None, normalize=False):
+    not_nan_mask = (~df.isnull())
+
+    if mask is None:
+        mask = not_nan_mask
+    else:
+        mask = np.logical_and(not_nan_mask, mask)
+
+    rank = df[mask].rank(axis=axis, na_option='keep')
+
+    if normalize:
+        rank = rank.div(mask.sum(axis=axis), axis=(1 - axis))
+    return rank
