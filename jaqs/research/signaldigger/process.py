@@ -15,10 +15,24 @@ data_config = {
 }
 
 
+def _mask_df(df, mask):
+    mask = mask.astype(bool)
+    df[mask] = np.nan
+    return df
+
+
+def _mask_non_index_member(df, index_member=None):
+    if index_member is not None:
+        index_member = index_member.astype(bool)
+        return _mask_df(df, ~index_member)
+    return df
+
+
 # 横截面标准化 - 对Dataframe数据
-def standardize(factor_df):
+def standardize(factor_df, index_member=None):
     """
     对因子值做z-score标准化
+    :param index_member:
     :param factor_df: 因子值 (pandas.Dataframe类型),index为datetime, colunms为股票代码。
                       形如:
                                   　AAPL	　　　     BA	　　　CMG	　　   DAL	      LULU	　　
@@ -32,13 +46,15 @@ def standardize(factor_df):
     """
 
     factor_df = jutil.fillinf(factor_df)
-    return factor_df.apply(lambda x: (x - x.mean()) / x.std(), axis=1)
+    factor_df = _mask_non_index_member(factor_df, index_member)
+    return factor_df.sub(factor_df.mean(axis=1), axis=0).div(factor_df.std(axis=1), axis=0)
 
 
 # 横截面去极值 - 对Dataframe数据
-def winsorize(factor_df, alpha=0.05):
+def winsorize(factor_df, alpha=0.05, index_member=None):
     """
     对因子值做去极值操作
+    :param index_member:
     :param alpha: 极值范围
     :param factor_df: 因子值 (pandas.Dataframe类型),index为datetime, colunms为股票代码。
                       形如:
@@ -59,13 +75,15 @@ def winsorize(factor_df, alpha=0.05):
         return se
 
     factor_df = jutil.fillinf(factor_df)
+    factor_df = _mask_non_index_member(factor_df, index_member)
     return factor_df.apply(lambda x: winsorize_series(x), axis=1)
 
 
 # 横截面排序并归一化
-def rank_standardize(factor_df, ascending=True):
+def rank_standardize(factor_df, index_member=None):
     """
     输入因子值, 将因子用排序分值重构，并处理到0-1之间(默认为升序——因子越大 排序分值越大(越好)
+        :param index_member:
         :param factor_df: 因子值 (pandas.Dataframe类型),index为datetime, colunms为股票代码。
                       形如:
                                   　AAPL	　　　     BA	　　　CMG	　　   DAL	      LULU	　　
@@ -80,8 +98,8 @@ def rank_standardize(factor_df, ascending=True):
     :return: 排序重构后的因子值。 取值范围在0-1之间
     """
     factor_df = jutil.fillinf(factor_df)
-    num = len(factor_df.columns)
-    return factor_df.apply(lambda x: x.rank(method="min", ascending=ascending) / num, axis=1)
+    factor_df = _mask_non_index_member(factor_df, index_member)
+    return jutil.rank_with_mask(factor_df, axis=1, normalize=True)
 
 
 # 将因子值加一个极小的扰动项,用于对quantile做区分
@@ -154,10 +172,12 @@ def _prepare_data(pools,
 def neutralize(factor_df,
                factorIsMV=False,
                group_field="sw1",
+               index_member=None,
                dv=None,
                ds=None):
     """
     对因子做行业、市值中性化
+    :param index_member:
     :param ds: data_api
     :param dv: dataview
     :param group_field:　行业分类类型　"sw1", "sw1", "sw1", "sw1", "zz1", "zz2"
@@ -187,15 +207,18 @@ def neutralize(factor_df,
             X[_] = frame
         return X
 
-    # 剔除有过多无效数据的个股
     factor_df = jutil.fillinf(factor_df)
+    # 剔除非指数成份股
+    factor_df = _mask_non_index_member(factor_df, index_member)
+
+    # 剔除有过多无效数据的个股
     # empty_data = pd.isnull(factor_df).sum()
     # pools = empty_data[empty_data < len(factor_df) * 0.1].index  # 保留空值比例低于0.1的股票
     pools = factor_df.columns
     # factor_df = factor_df.loc[:, pools]
 
     # 剔除过多值为空的截面
-    factor_df = factor_df.dropna(thresh=len(factor_df.columns) * 0.9)  # 保留空值比例低于0.9的截面
+    factor_df = factor_df.dropna(thresh=len(factor_df.columns) * 1)  # 删除全为空的截面
     start = factor_df.index[0]
     end = factor_df.index[-1]
     dv = _prepare_data(pools, start, end, group_field, dv=dv, ds=ds)
