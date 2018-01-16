@@ -94,7 +94,6 @@ def rank_standardize(factor_df, index_member=None):
                         2016-06-29	0.068774	0.019848	0.058476	-0.049971	0.042805
                         2016-06-30	0.039431	0.012271	0.037432	-0.027272	0.010902
 
-    :param ascending: 因子值按升序法排序对应还是降序法排序对应。具体根据因子对收益的相关关系而定，为正则应用升序,为负用降序。(bool)
     :return: 排序重构后的因子值。 取值范围在0-1之间
     """
     factor_df = jutil.fillinf(factor_df)
