@@ -133,8 +133,8 @@ def _prepare_data(pools,
     if end < start:
         raise ValueError("end 不能小于 start.")
 
-    if not (group_field in ["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"]):
-        raise ValueError("group_field 只能为%s" % (str(["sw1", "sw1", "sw1", "sw1", "zz1", "zz2"])))
+    if not (group_field in ["sw1", "sw2", "sw3", "sw4", "zz1", "zz2"]):
+        raise ValueError("group_field 只能为%s" % (str(["sw1", "sw2", "sw3", "sw4", "zz1", "zz2"])))
 
     if ds is None:
         ds = RemoteDataService()
