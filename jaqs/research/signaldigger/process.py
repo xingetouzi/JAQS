@@ -244,6 +244,8 @@ def neutralize(factor_df,
             DataAll = pd.concat([X.T, factor_df.loc[i]], axis=1)
         # 剔除截面中值含空的股票
         DataAll = DataAll.dropna()
+        if len(DataAll) == 0:
+            continue
         DataAll.columns = list(range(0, nfactors + 1))
         regr = linear_model.LinearRegression(fit_intercept=False)
         regr.fit(np.matrix(DataAll.iloc[:, 0:nfactors]), np.transpose(np.matrix(DataAll.iloc[:, nfactors])))
