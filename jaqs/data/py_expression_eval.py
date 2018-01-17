@@ -30,7 +30,7 @@ import pandas as pd
 from jaqs.data.align import align
 import jaqs.util.numeric as numeric
 from jaqs.util import rank_with_mask
-from jaqs.research.signal_function_mod import ta as ta_func
+from jaqs.research import signal_function_mod as sfm
 
 TNUMBER = 0
 TOP1 = 1
@@ -367,7 +367,7 @@ class Parser(object):
     def ta(self,
            *args,
            **kwargs):
-        return ta_func(*args, **kwargs)
+        return sfm.ta(*args, **kwargs)
 
     def add(self, a, b):
         (a, b) = self._align_bivariate(a, b)
