@@ -208,24 +208,16 @@ def neutralize(factor_df,
         return X
 
     factor_df = jutil.fillinf(factor_df)
-    # 剔除非指数成份股
-    factor_df = _mask_non_index_member(factor_df, index_member)
-
-    # 剔除有过多无效数据的个股
-    # empty_data = pd.isnull(factor_df).sum()
-    # pools = empty_data[empty_data < len(factor_df) * 0.1].index  # 保留空值比例低于0.1的股票
-    pools = factor_df.columns
-    # factor_df = factor_df.loc[:, pools]
-
-    # 剔除过多值为空的截面
+    factor_df = _mask_non_index_member(factor_df, index_member)  # 剔除非指数成份股
     factor_df = factor_df.dropna(how="all")  # 删除全为空的截面
     start = factor_df.index[0]
     end = factor_df.index[-1]
+    pools = factor_df.columns
     dv = _prepare_data(pools, start, end, group_field, dv=dv, ds=ds)
 
     # 获取对数流动市值，并去极值、标准化。市值类因子不需进行这一步
     if not factorIsMV:
-        x1 = standardize(winsorize(dv.get_ts("LFLO")))
+        x1 = standardize(winsorize(dv.get_ts("LFLO"), index_member=index_member), index_member)
 
     # 获取行业分类信息
     industry_class = dv.get_ts(group_field)

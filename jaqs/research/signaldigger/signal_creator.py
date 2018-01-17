@@ -81,8 +81,9 @@ class SignalCreator(object):
 
         if self.signal_ret is not None:
             for ret_type in self.signal_ret.keys():
-                assert np.all(signal.index == self.signal_ret[ret_type].index)
-                assert np.all(signal.columns == self.signal_ret[ret_type].columns)
+                if self.signal_ret[ret_type] is not None:
+                    assert np.all(signal.index == self.signal_ret[ret_type].index)
+                    assert np.all(signal.columns == self.signal_ret[ret_type].columns)
         else:
             if self.price is not None:
                 assert np.all(signal.index == self.price.index)
