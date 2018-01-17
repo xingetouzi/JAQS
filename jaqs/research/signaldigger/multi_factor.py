@@ -42,8 +42,10 @@ def orthogonalize(factors_dict=None,
         new_factors_dict[factor_name] = []
         # 处理非法值
         factors_dict[factor_name] = jutil.fillinf(factors_dict[factor_name])
+        factors_dict[factor_name] = process._mask_non_index_member(factors_dict[factor_name],
+                                                                   index_member=index_member)
         if winsorization:
-            factors_dict[factor_name] = process.winsorize(factors_dict[factor_name], index_member=index_member)
+            factors_dict[factor_name] = process.winsorize(factors_dict[factor_name])
 
     factor_name_list = list(factors_dict.keys())
     factor_value_list = list(factors_dict.values())
