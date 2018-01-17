@@ -1,6 +1,5 @@
 # encoding: utf-8
 
-from .signaldigger import process, multi_factor, Optimizer, SignalDigger, SignalCreator
-from .signaldigger.analysis import analysis
+from .signaldigger import Optimizer, SignalDigger, SignalCreator
 
-__all__ = ['SignalDigger', "Optimizer", "analysis", "SignalCreator"]
+__all__ = ['SignalDigger', "Optimizer", "SignalCreator"]
