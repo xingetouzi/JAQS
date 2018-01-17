@@ -30,6 +30,7 @@ import pandas as pd
 from jaqs.data.align import align
 import jaqs.util.numeric as numeric
 from jaqs.util import rank_with_mask
+from jaqs.research.signal_function_mod import ta as ta_func
 
 TNUMBER = 0
 TOP1 = 1
@@ -39,7 +40,6 @@ TFUNCALL = 4
 
 
 class Expression(object):
-    
     def __init__(self, tokens, ops1, ops2, functions):
         self.tokens = tokens
         self.ops1 = ops1
@@ -48,7 +48,7 @@ class Expression(object):
         self.ann_dts = None
         self.trade_dts = None
         self.index_member = None
-    
+
     def simplify(self, values):
         values = values or {}
         nstack = []
@@ -79,9 +79,9 @@ class Expression(object):
                 newexpression.append(item)
         while nstack:
             newexpression.add(nstack.pop(0))
-        
+
         return Expression(newexpression, self.ops1, self.ops2, self.functions)
-    
+
     def substitute(self, variable, expr):
         if not isinstance(expr, Expression):
             pass  # expr = Parser().parse(str(expr))
@@ -94,18 +94,18 @@ class Expression(object):
                 for j in range(0, len(expr.tokens)):
                     expritem = expr.tokens[j]
                     replitem = Token(
-                            expritem.type_,
-                            expritem.index_,
-                            expritem.prio_,
-                            expritem.number_,
+                        expritem.type_,
+                        expritem.index_,
+                        expritem.prio_,
+                        expritem.number_,
                     )
                     newexpression.append(replitem)
             else:
                 newexpression.append(item)
-        
+
         ret = Expression(newexpression, self.ops1, self.ops2, self.functions)
         return ret
-    
+
     def evaluate(self, values, ann_dts=None, trade_dts=None):
         self.ann_dts = ann_dts
         self.trade_dts = trade_dts
@@ -148,7 +148,7 @@ class Expression(object):
         if len(nstack) > 1:
             raise Exception('invalid Expression (parity)')
         return nstack[0]
-    
+
     def toString(self, toJS=False):
         nstack = []
         L = len(self.tokens)
@@ -183,14 +183,14 @@ class Expression(object):
         if len(nstack) > 1:
             raise Exception('invalid Expression (parity)')
         return nstack[0]
-    
+
     def variables(self):
         vars = []
         for i in range(0, len(self.tokens)):
             item = self.tokens[i]
             if item.type_ == TVAR and \
                     not item.index_ in vars and \
-                    item.index_ not in self.functions:
+                            item.index_ not in self.functions:
                 vars.append(item.index_)
         return vars
 
@@ -201,7 +201,7 @@ class Token(object):
         self.index_ = index_ or 0
         self.prio_ = prio_ or 0
         self.number_ = number_ if number_ != None else 0
-    
+
     def to_str(self):
         if self.type_ == TNUMBER:
             return self.number_
@@ -218,15 +218,15 @@ class Parser(object):
         self.success = False
         self.errormsg = ''
         self.expression = ''
-        
+
         self.pos = 0
-        
+
         self.tokens = None
         self.tokennumber = 0
         self.tokenprio = 0
         self.tokenindex = 0
         self.tmpprio = 0
-        
+
         self.PRIMARY = 1
         self.OPERATOR = 2
         self.FUNCTION = 4
@@ -236,7 +236,7 @@ class Parser(object):
         self.SIGN = 64
         self.CALL = 128
         self.NULLARY_CALL = 256
-        
+
         # do not need parenthesis
         self.ops1 = {
             'Sin': np.sin,
@@ -258,7 +258,7 @@ class Parser(object):
             #            'Rank':         self.rank,
             'exp': np.exp
         }
-        
+
         self.ops2 = {
             '+': self.add,
             '-': self.sub,
@@ -280,6 +280,7 @@ class Parser(object):
 
         # need parenthesis
         self.functions = {
+            'Ta': self.ta,
             # cross section
             'Min': np.minimum,
             'Max': np.maximum,
@@ -298,7 +299,7 @@ class Parser(object):
             'Ts_Percentile': self.ts_percentile,
             'Ts_Quantile': self.ts_quantile,
             'Ewma': self.ewma,
-            'Sma':self.sma,
+            'Sma': self.sma,
             'Sum': self.sum,
             'Product': self.product,  # rolling product
             'CountNans': self.count_nans,  # rolling count Nans
@@ -325,12 +326,12 @@ class Parser(object):
             'If': self.ifFunction,
             # test
         }
-        
+
         self.consts = {
             'E': math.e,
             'PI': math.pi,
         }
-        
+
         # no use
         self.values = {
             'sin': math.sin,
@@ -356,44 +357,50 @@ class Parser(object):
             'E': math.e,
             'PI': math.pi
         }
-        
+
         self.ann_dts = None
         self.trade_dts = None
-    
+
     # -----------------------------------------------------
     # functions
+    # ta function
+    def ta(self,
+           *args,
+           **kwargs):
+        return ta_func(*args, **kwargs)
+
     def add(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         return a + b
-    
+
     def sub(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         return a - b
-    
+
     def mul(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         return a * b
-    
+
     def div(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         res = a / b
         if isinstance(res, pd.DataFrame):
             res = res.replace([np.inf, -np.inf], np.nan)
         return res
-    
+
     def mod(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         return a % b
-    
+
     def pow(self, a, b):
         return np.power(a, b)
-    
+
     def concat(self, a, b, *args):
         result = u'{0}{1}'.format(a, b)
         for arg in args:
             result = u'{0}{1}'.format(result, arg)
         return result
-    
+
     @staticmethod
     def _to_array(x):
         if isinstance(x, (pd.DataFrame, pd.Series)):
@@ -405,7 +412,7 @@ class Parser(object):
         else:
             print(x)
             raise ValueError("Cannot convert type {} to numpy array".format(repr(type(x))))
-    
+
     def equal(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -414,7 +421,7 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def notEqual(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -423,7 +430,7 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def greaterThan(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -432,7 +439,7 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def lessThan(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -441,7 +448,7 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def greaterThanEqual(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -450,7 +457,7 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def lessThanEqual(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -459,7 +466,7 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def andOperator(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -468,7 +475,7 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def orOperator(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         arr, brr = self._to_array(a), self._to_array(b)
@@ -477,10 +484,10 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def neg(self, a):
         return -a
-    
+
     def logicalNot(self, a):
         arr = self._to_array(a)
         mask = np.isnan(arr)
@@ -488,17 +495,17 @@ class Parser(object):
         res = res.astype(float)
         res[mask] = np.nan
         return pd.DataFrame(index=a.index, columns=a.columns, data=res)
-    
+
     def random(self, a):
         return np.random.rand() * (a or 1)
-    
+
     def fac(self, a):  # a!
         return np.math.factorial(a)
-    
+
     def pyt(self, a, b):
         (a, b) = self._align_bivariate(a, b)
         return np.sqrt(a * a + b * b)
-    
+
     def ifFunction(self, cond, b, c):
         mask = np.isnan(cond)
         data = np.where(cond, b, c)
@@ -506,7 +513,7 @@ class Parser(object):
         data[mask] = np.nan
         df = pd.DataFrame(data, columns=cond.columns, index=cond.index)
         return df
-    
+
     def tail(self, x, lower, upper, neweval):
         data = np.where((x >= lower) & (x <= upper), neweval, x)
         df = pd.DataFrame(data, columns=x.columns, index=x.index)
@@ -524,36 +531,36 @@ class Parser(object):
     def ewma(df, halflife):
         r = df.ewm(halflife=halflife, axis=0)
         return r.mean()
-    
+
     @staticmethod
     def sma(df, n, m):
         a = n * 1.0 / m - 1
         r = df.ewm(com=a, axis=0)
         return r.mean()
-    
+
     def corr(self, x, y, n):
         (x, y) = self._align_bivariate(x, y)
         return pd.rolling_corr(x, y, n)
-    
+
     def cov(self, x, y, n):
         (x, y) = self._align_bivariate(x, y)
         return pd.rolling_cov(x, y, n)
-    
+
     def std_dev(self, x, n):
         return pd.rolling_std(x, n)
-    
+
     def sum(self, x, n):
         return pd.rolling_sum(x, n)
-    
+
     def count_nans(self, x, n):
         return n - pd.rolling_count(x, n)
-    
+
     def delay(self, x, n):
         return x.shift(n)
-    
+
     def delta(self, x, n):
         return x.diff(n)
-    
+
     @staticmethod
     def calc_return(df, forward=1, log=False):
         if log:
@@ -562,22 +569,22 @@ class Parser(object):
             shift = df.shift(forward)
             res = (df - shift) / shift
         return res
-    
+
     def ts_mean(self, x, n):
         return pd.rolling_mean(x, n)
-    
+
     def ts_min(self, x, n):
         return pd.rolling_min(x, n)
-    
+
     def ts_max(self, x, n):
         return pd.rolling_max(x, n)
-    
+
     def ts_kurt(self, x, n):
         return pd.rolling_kurt(x, n)
-    
+
     def ts_skew(self, x, n):
         return pd.rolling_skew(x, n)
-    
+
     def product(self, x, n):
         return pd.rolling_apply(x, n, np.product)
 
@@ -585,12 +592,12 @@ class Parser(object):
     def ts_rank(df, window):
         """Return a DataFrame with values ranging from 0.0 to 1.0"""
         roll = df.rolling(window=window)
-    
+
         def _rank_arr(arr, norm=1.0):
             norm = norm * 1.0
             ranks = np.argsort(np.argsort(arr))[-1] + 1
             return ranks / norm
-    
+
         res = roll.apply(_rank_arr)
         return res
 
@@ -598,15 +605,15 @@ class Parser(object):
     def ts_percentile(df, window):
         """Return a DataFrame with values ranging from 0.0 to 1.0"""
         roll = df.rolling(window=window)
-    
+
         def _rank_arr(arr, norm=1.0):
             norm = norm * 1.0
             ranks = np.argsort(np.argsort(arr))[-1] + 1
             return ranks / norm
-    
+
         res = roll.apply(_rank_arr, kwargs={'norm': window})
         return res
-    
+
     def step(self, x, n):
         st = x.copy()
         n = n + 1
@@ -614,25 +621,25 @@ class Parser(object):
         for col in st.columns:
             st.loc[:, col] = range(begin, n, 1)
         return st
-    
+
     def decay_exp_array(self, x, f):
         n = len(x)
         step = range(0, n)
         step = step[::-1]
         fs = np.power(f, step)
         return np.dot(x, fs) / np.sum(fs)
-    
+
     def decay_linear_array(self, x):
         n = len(x) + 1
         step = range(1, n)
         return np.dot(x, step) / np.sum(step)
-    
+
     def decay_linear(self, x, n):
         return pd.rolling_apply(x, n, self.decay_linear_array)
-    
+
     def decay_exp(self, x, f, n):
         return pd.rolling_apply(x, n, self.decay_exp_array, args=[f])
-    
+
     def signed_power(self, x, e):
         signs = np.sign(x)
         return signs * np.power(np.abs(x), e)
@@ -666,7 +673,7 @@ class Parser(object):
         df = self._mask_non_index_member(df)
         rank = rank_with_mask(df, axis=1, normalize=True)
         return rank
-    
+
     # TODO: all cross-section operations support in-group modification: neutral, extreme values, standardize.
     def group_rank(self, x, group):
         x = self._align_univariate(x)
@@ -681,7 +688,7 @@ class Parser(object):
             else:
                 res = res.fillna(rank)
         return res
-    
+
     def group_percentile(self, x, group):
         x = self._align_univariate(x)
         x = self._mask_non_index_member(x)
@@ -695,14 +702,14 @@ class Parser(object):
             else:
                 res = res.fillna(rank)
         return res
-    
+
     def ts_quantile(self, df, window=3, n_quantiles=5):
         roll = df.rolling(window=window)
-    
+
         func = lambda arr: numeric.quantilize_without_nan(arr, n_quantiles=n_quantiles, axis=0)[-1]
         res = roll.apply(func)
         return res
-    
+
     def to_quantile(self, df, n_quantiles=5, axis=1):
         """
         Convert cross-section values to the quantile number they belong.
@@ -735,7 +742,7 @@ class Parser(object):
     def group_quantile(self, df, group, n_quantiles=5):
         df = self._align_univariate(df)
         df = self._mask_non_index_member(df)
-        
+
         res = None
         groups = np.unique(pd.Series(group.values.flatten()).dropna())
         for val in groups:
@@ -800,16 +807,17 @@ class Parser(object):
         return res
 
     '''
+
     def standardize(self, df):
         """Cross section."""
         df = self._align_univariate(df)
         df = self._mask_non_index_member(df)
-        
+
         axis = 1
         mean = df.mean(axis=axis)
         std = df.std(axis=axis)
         return df.sub(mean, axis=0).div(std, axis=0)
-    
+
     def cutoff(self, df, z_score=3.0):
         """
         Cut off extreme values using Median Absolute Deviation
@@ -828,21 +836,21 @@ class Parser(object):
 
         axis = 1
         x = df.values
-        
+
         median = np.nanmedian(x, axis=axis).reshape(-1, 1)
         diff = x - median
         diff_abs = np.abs(diff)
         mad = np.nanmedian(diff_abs, axis=axis).reshape(-1, 1)
-        
+
         mask = diff_abs > z_score * mad
         x[mask] = 0
         x = x + z_score * mad * np.sign(diff * mask) + mask * median
-        
+
         return pd.DataFrame(index=df.index, columns=df.columns, data=x)
-    
+
     def industry_netural(self, x, group):
         pass
-    
+
     # -----------------------------------------------------
     # align functions
     def _align_bivariate(self, df1, df2, force_align=False):
@@ -880,7 +888,7 @@ class Parser(object):
             upper for 'Rank', lower for 'rank'
         
         """
-        
+
         def set_dic_key_capital(dic, style='camel'):
             """
             
@@ -905,10 +913,10 @@ class Parser(object):
             else:
                 raise NotImplementedError("style = {}".format(style))
             return res
-        
+
         self.functions = set_dic_key_capital(self.functions, style=style)
         self.ops1 = set_dic_key_capital(self.ops1, style=style)
-    
+
     def register_function(self, name, func):
         """Register a new function to function map.
         
@@ -921,7 +929,7 @@ class Parser(object):
         if name in self.functions:
             print("Register function failed: name [{:s}] already exist. Try another name.".format(name))
             return
-        
+
         self.functions[name] = func
 
     # -----------------------------------------------------
@@ -949,7 +957,7 @@ class Parser(object):
         noperators = 0
         self.expression = expr
         self.pos = 0
-        
+
         while self.pos < len(self.expression):
             if self.is_operator():
                 if self.isSign() and expected & self.SIGN:
@@ -957,7 +965,7 @@ class Parser(object):
                         self.tokenprio = 5
                         self.tokenindex = '-'
                         noperators += 1
-                        self.addfunc(tokenstack, operstack, TOP1)                    
+                        self.addfunc(tokenstack, operstack, TOP1)
                     elif self.isLogicNot():
                         self.tokenprio = 5
                         self.tokenindex = '!'
@@ -1034,7 +1042,7 @@ class Parser(object):
             elif self.isVar():
                 if (expected & self.PRIMARY) == 0:
                     self.error_parsing(self.pos, 'unexpected variable')
-                
+
                 vartoken = Token(TVAR, self.tokenindex, 0, 0)
                 tokenstack.append(vartoken)
                 expected = \
@@ -1057,7 +1065,7 @@ class Parser(object):
             self.error_parsing(self.pos, 'parity')
         self.tokens = tokenstack
         return Expression(tokenstack, self.ops1, self.ops2, self.functions)
-    
+
     def evaluate(self, values, ann_dts=None, trade_dts=None, index_member=None):
         """
         Evaluate the value of expression using. Data of different frequency will be automatically expanded.
@@ -1080,7 +1088,7 @@ class Parser(object):
         self.ann_dts = ann_dts
         self.trade_dts = trade_dts
         self.index_member = index_member
-        
+
         values = values or {}
         nstack = []
         L = len(self.tokens)
@@ -1127,13 +1135,13 @@ class Parser(object):
         self.success = False
         self.errormsg = 'parse error [column ' + str(column) + ']: ' + msg
         raise Exception(self.errormsg)
-    
+
     def addfunc(self, tokenstack, operstack, type_):
         operator = Token(
-                type_,
-                self.tokenindex,
-                self.tokenprio + self.tmpprio,
-                0,
+            type_,
+            self.tokenindex,
+            self.tokenprio + self.tmpprio,
+            0,
         )
         while len(operstack) > 0:
             if operator.prio_ <= operstack[len(operstack) - 1].prio_:
@@ -1141,7 +1149,7 @@ class Parser(object):
             else:
                 break
         operstack.append(operator)
-    
+
     def is_number(self):
         r = False
         str = ''
@@ -1158,14 +1166,14 @@ class Parser(object):
             else:
                 break
         return r
-    
+
     def unescape(self, v, pos):
         buffer = []
         escaping = False
-        
+
         for i in range(0, len(v)):
             c = v[i]
-            
+
             if escaping:
                 if c == "'":
                     buffer.append("'")
@@ -1200,8 +1208,8 @@ class Parser(object):
                     break
                 else:
                     raise self.error_parsing(
-                            pos + i,
-                            'Illegal escape sequence: \'\\' + c + '\'',
+                        pos + i,
+                        'Illegal escape sequence: \'\\' + c + '\'',
                     )
                 escaping = False
             else:
@@ -1209,9 +1217,9 @@ class Parser(object):
                     escaping = True
                 else:
                     buffer.append(c)
-        
+
         return ''.join(buffer)
-    
+
     def is_str(self):
         r = False
         str = ''
@@ -1229,7 +1237,7 @@ class Parser(object):
                     r = True
                     break
         return r
-    
+
     def is_const(self):
         for i in self.consts:
             L = len(i)
@@ -1244,7 +1252,7 @@ class Parser(object):
                     self.pos += L
                     return True
         return False
-    
+
     def is_operator(self):
         ops = (
             ('+', 2, '+'),
@@ -1274,23 +1282,23 @@ class Parser(object):
                 self.pos += len(token)
                 return True
         return False
-    
+
     def isSign(self):
         code = self.expression[self.pos - 1]
         return (code == '+') or (code == '-') or (code == '!')
-    
+
     def isPositiveSign(self):
         code = self.expression[self.pos - 1]
         return code == '+'
-    
+
     def isNegativeSign(self):
         code = self.expression[self.pos - 1]
-        return code == '-' 
-    
+        return code == '-'
+
     def isLogicNot(self):
         code = self.expression[self.pos - 1]
-        return code == '!' 
-    
+        return code == '!'
+
     def isLeftParenth(self):
         code = self.expression[self.pos]
         if code == '(':
@@ -1298,7 +1306,7 @@ class Parser(object):
             self.tmpprio += 10
             return True
         return False
-    
+
     def isRightParenth(self):
         code = self.expression[self.pos]
         if code == ')':
@@ -1306,7 +1314,7 @@ class Parser(object):
             self.tmpprio -= 10
             return True
         return False
-    
+
     def isComma(self):
         code = self.expression[self.pos]
         if code == ',':
@@ -1315,14 +1323,14 @@ class Parser(object):
             self.tokenindex = ","
             return True
         return False
-    
+
     def isWhite(self):
         code = self.expression[self.pos]
         if code.isspace():
             self.pos += 1
             return True
         return False
-    
+
     def isOp1(self):
         str = ''
         for i in range(self.pos, len(self.expression)):
@@ -1337,7 +1345,7 @@ class Parser(object):
             self.pos += len(str)
             return True
         return False
-    
+
     def isOp2(self):
         str = ''
         for i in range(self.pos, len(self.expression)):
@@ -1352,7 +1360,7 @@ class Parser(object):
             self.pos += len(str)
             return True
         return False
-    
+
     def isVar(self):
         str = ''
         inQuotes = False
@@ -1370,7 +1378,7 @@ class Parser(object):
             self.pos += len(str)
             return True
         return False
-    
+
     def isComment(self):
         code = self.expression[self.pos - 1]
         if code == '/' and self.expression[self.pos] == '*':
