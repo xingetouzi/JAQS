@@ -15,8 +15,7 @@ import pandas as pd
 
 import jaqs.util as jutil
 from jaqs.data.align import align
-from .py_expression_eval import Parser
-#from jaqs.data.py_expression_eval import Parser
+from jaqs.data.py_expression_eval import Parser
 
 
 class DataView(object):
