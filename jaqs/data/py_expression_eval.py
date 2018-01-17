@@ -30,7 +30,7 @@ import pandas as pd
 from jaqs.data.align import align
 import jaqs.util.numeric as numeric
 from jaqs.util import rank_with_mask
-from jaqs.research import signal_function_mod as sfm
+from jaqs.data import signal_function_mod as sfm
 
 TNUMBER = 0
 TOP1 = 1
