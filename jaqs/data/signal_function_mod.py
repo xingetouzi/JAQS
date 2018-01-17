@@ -6,6 +6,7 @@ from talib import abstract
 
 # talib函数库,自动剔除为空的日期,用于计算signal
 def ta(ta_method='MA',
+       ta_column=0,
        Open=None,
        High=None,
        Low=None,
@@ -31,6 +32,18 @@ def ta(ta_method='MA',
         if len(df) == 0:
             continue
         result = pd.DataFrame(getattr(abstract, ta_method)(df, *args, **kwargs))
+
+        if isinstance(ta_column, int):
+            if ta_column >= len(result.columns) or ta_column < 0:
+                raise ValueError("非法的ta_column,列号不能为负且不得超过%s,输入为%s" % (len(result.columns) - 1, ta_column))
+            result = pd.DataFrame(result.iloc[:, ta_column])
+        elif isinstance(ta_column, str):
+            if not (ta_column in result.columns):
+                raise ValueError("非法的ta_column,可选的列名有%s,输入为%s" % (str(result.columns), ta_column))
+            result = pd.DataFrame(result.loc[:, ta_column])
+        else:
+            raise ValueError("ta_column格式有误,错误的类型为%s,请指定合法的列号(int),或列名(str)" % (type(ta_column)))
+
         result.columns = [sec, ]
         results.append(result)
 
