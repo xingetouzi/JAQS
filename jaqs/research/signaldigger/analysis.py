@@ -285,33 +285,31 @@ def calc_tb_quantile_ret_space_mean_std(signal_data,
     return quantile_daily_mean_std_dic
 
 
-def cal_spaces_stats(space):
+def cal_spaces_stats(space, period):
     space_summary_table = pd.DataFrame()
+    ratio = (1.0 * common.CALENDAR_CONST.TRADE_DAYS_PER_YEAR / period)
     if len(space["upside_space"]) > 0:
-        space["upside_space"] = space["upside_space"].values.reshape((-1, 1))
-        space["downside_space"] = space["downside_space"].values.reshape((-1, 1))
-        for space_type in ["upside_space", "downside_space"]:
+        space["Up_sp"] = space["upside_space"].values.reshape((-1, 1))
+        space["Down_sp"] = space["downside_space"].values.reshape((-1, 1))
+        for space_type in ["Up_sp", "Down_sp"]:
             mean = space[space_type].mean()
             std = space[space_type].std()
-            space_summary_table[space_type + "_mean"] = [mean]
-            space_summary_table[space_type + "_std"] = [std]
-            space_summary_table[space_type + '_mean/std'] = [mean / std]
-            space_summary_table[space_type + "_max"] = [space[space_type].max()]
-            space_summary_table[space_type + "_min"] = [space[space_type].min()]
-            for percent in [25, 50, 75]:
-                space_summary_table[space_type + "_percentile" + str(percent)] = [np.percentile(space[space_type],
-                                                                                                percent)]
-            space_summary_table[space_type + '_occurance'] = [len(space[space_type])]
-        space_summary_table["up&down_space_mean_sum"] = space_summary_table["upside_space_mean"] + space_summary_table[
-            "downside_space_mean"]
+            annual_ret, annual_vol = mean * ratio, std * np.sqrt(ratio)
+            space_summary_table["Ann. " + space_type + " Ret"] = [annual_ret]
+            space_summary_table["Ann. " + space_type + " Vol"] = [annual_vol]
+            space_summary_table["Ann. " + space_type + " IR"] = [annual_ret / annual_vol]
+            for percent in [5, 25, 50, 75, 95]:
+                space_summary_table[space_type + " Pct" + str(percent)] = [np.percentile(space[space_type],
+                                                                            percent)]
+            space_summary_table[space_type + ' Occur'] = [len(space[space_type])]
     return space_summary_table.T
 
 
-def space_stats(signal_data, is_event):
+def space_stats(signal_data, is_event, period):
     spaces = get_spaces(signal_data, is_event)
     stats_result = []
     for dir_type in spaces.keys():
-        stats = cal_spaces_stats(spaces[dir_type])
+        stats = cal_spaces_stats(spaces[dir_type], period)
         if len(stats) > 0:
             stats.columns = [dir_type]
             stats_result.append(stats)
@@ -368,11 +366,11 @@ def analysis(signal_data, is_event, period):
     if is_event:
         return {
             "ret": return_stats(signal_data, True, period),
-            "space": space_stats(signal_data, True)
+            "space": space_stats(signal_data, True, period)
         }
     else:
         return {
             "ic": ic_stats(signal_data),
             "ret": return_stats(signal_data, False, period),
-            "space": space_stats(signal_data, False)
+            "space": space_stats(signal_data, False, period)
         }
