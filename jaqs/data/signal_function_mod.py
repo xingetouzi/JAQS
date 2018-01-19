@@ -1,6 +1,7 @@
 # encoding=utf-8
 
 import pandas as pd
+import numpy as np
 from talib import abstract
 
 
@@ -48,3 +49,13 @@ def ta(ta_method='MA',
         results.append(result)
 
     return pd.concat(results, axis=1)
+
+
+# 最大值的坐标
+def ts_argmax(df, window=10):
+    return df.rolling(window).apply(np.argmax) + 1
+
+
+# 最小值的坐标
+def ts_argmin(df, window=10):
+    return df.rolling(window).apply(np.argmin) + 1

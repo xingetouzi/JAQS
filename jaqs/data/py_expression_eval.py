@@ -30,7 +30,7 @@ import pandas as pd
 from jaqs.data.align import align
 import jaqs.util.numeric as numeric
 from jaqs.util import rank_with_mask
-from jaqs.data import signal_function_mod as sfm
+from . import signal_function_mod as sfm
 
 TNUMBER = 0
 TOP1 = 1
@@ -281,6 +281,8 @@ class Parser(object):
         # need parenthesis
         self.functions = {
             'Ta': self.ta,
+            'Ts_Argmax': self.ts_argmax,
+            'Ts_Argmin': self.ts_argmin,
             # cross section
             'Min': np.minimum,
             'Max': np.maximum,
@@ -368,6 +370,14 @@ class Parser(object):
            *args,
            **kwargs):
         return sfm.ta(*args, **kwargs)
+
+    def ts_argmax(self,*args,
+           **kwargs):
+        return sfm.ts_argmax(*args, **kwargs)
+
+    def ts_argmin(self,*args,
+           **kwargs):
+        return sfm.ts_argmin(*args, **kwargs)
 
     def add(self, a, b):
         (a, b) = self._align_bivariate(a, b)
