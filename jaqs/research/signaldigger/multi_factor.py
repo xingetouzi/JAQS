@@ -194,7 +194,7 @@ def max_IR_weight(ic_df,
         inv_ic_cov_mat = np.linalg.inv(ic_cov_mat)
         weight = inv_ic_cov_mat * np.mat(ic_dt.mean().values).reshape(len(inv_ic_cov_mat), 1)
         weight = np.array(weight.reshape(len(weight), ))[0]
-        weight_df.ix[dt] = weight / np.sum(weight)
+        weight_df.ix[dt] = weight / np.sum(np.abs(weight))
 
     return weight_df.shift(holding_period)
 
@@ -241,7 +241,7 @@ def max_IC_weight(ic_df,
         inv_f_cov_mat = np.linalg.inv(f_cov_mat)
         weight = inv_f_cov_mat * np.mat(ic_df.loc[dt].values).reshape(len(inv_f_cov_mat), 1)
         weight = np.array(weight.reshape(len(weight), ))[0]
-        weight_df.ix[dt] = weight / np.sum(weight)
+        weight_df.ix[dt] = weight / np.sum(np.abs(weight))
 
     return weight_df.shift(holding_period)
 
@@ -276,7 +276,7 @@ def ic_weight(ic_df,
             continue
         weight = ic_dt.mean(axis=0)
         weight = np.array(weight.reshape(len(weight), ))
-        weight_df.ix[dt] = weight / np.sum(weight)
+        weight_df.ix[dt] = weight / np.sum(np.abs(weight))
 
     return weight_df.shift(holding_period)
 
@@ -311,7 +311,7 @@ def ir_weight(ic_df,
             continue
         weight = ic_dt.mean(axis=0) / ic_dt.std(axis=0)
         weight = np.array(weight.reshape(len(weight), ))
-        weight_df.ix[dt] = weight / np.sum(weight)
+        weight_df.ix[dt] = weight / np.sum(np.abs(weight))
 
     return weight_df.shift(holding_period)
 
@@ -323,7 +323,7 @@ def combine_factors(factors_dict=None,
                     weighted_method="equal_weight",
                     props=None):
     """
-    # 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子,默认对Admin里加载的所有因子做调整
+    # 因子组合
     :param index_member:　是否是指数成分 pd.DataFrame
     :param winsorization: 是否去极值
     :param props:　当weighted_method不为equal_weight时　需传入此配置　配置内容包括
