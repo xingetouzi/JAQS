@@ -536,7 +536,7 @@ class DataApi(object):
                 if isinstance(value, (int, np.integer)):
                     value = int(value)
                 rpc_params[key] = value
-        
+
         cr = self._remote.call(method, rpc_params, timeout=self._timeout)
         
         return utils.extract_result(cr, data_format=data_format, index_column=index_column, class_name=data_class)
