@@ -1005,7 +1005,8 @@ class RemoteDataService(with_metaclass(Singleton, DataService)):
         df_raw, err_msg = self.query("lb.secAdjFactor", fields=','.join(fields_list),
                                  filter=filter_argument, orderby="symbol")
         self._raise_error_if_msg(err_msg)
-        
+
+        print(df_raw)
         df_raw = df_raw.astype(dtype={'symbol': str,
                                     'trade_date': np.integer,
                                     'adjust_factor': float

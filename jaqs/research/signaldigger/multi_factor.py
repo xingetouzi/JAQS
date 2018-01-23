@@ -66,6 +66,9 @@ def orthogonalize(factors_dict=None,
     # 因子标准化
     for factor_name in factor_name_list:
         factor_value = pd.concat(new_factors_dict[factor_name])
+        # 恢复在正交化过程中剔除的行和列
+        factor_value = factor_value.reindex(factor_value_list[0].index)
+        factor_value = factor_value.T.reindex(factor_value_list[0].columns).T
         if standardize_type == "z_score":
             new_factors_dict[factor_name] = process.standardize(factor_value, index_member)
         else:
