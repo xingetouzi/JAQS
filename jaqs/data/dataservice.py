@@ -922,7 +922,7 @@ class RemoteDataService(with_metaclass(Singleton, DataService)):
         df_raw, err_msg = self.query("lb.secIndustry", fields=','.join(fields_list),
                                  filter=filter_argument, orderby="symbol")
         self._raise_error_if_msg(err_msg)
-        
+
         df_raw = df_raw.astype(dtype={'in_date': np.integer,
                                       # 'out_date': np.integer
                                      })

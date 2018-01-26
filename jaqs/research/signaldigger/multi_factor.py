@@ -180,6 +180,8 @@ def max_IR_weight(ic_df,
     :return: weight_df:使用Sample协方差矩阵估算方法得到的因子权重(pd.Dataframe),
              索引（index)为datetime,columns为待合成的因子名称。
     """
+    # 最大化t-n ~ t天的ic_ir,用到了截止到t+period的数据（算收益）,
+    # 算得的权重用于t+period的因子进行加权
     n = rollback_period
     weight_df = pd.DataFrame(index=ic_df.index, columns=ic_df.columns)
     lw = LedoitWolf()
@@ -230,6 +232,8 @@ def max_IC_weight(ic_df,
     """
     weight_df = pd.DataFrame(index=ic_df.index, columns=ic_df.columns)
     lw = LedoitWolf()
+    # 最大化第t天的ic,用到了截止到t+period的数据（算收益）,
+    # 算得的权重用于t+period的因子进行加权
     for dt in ic_df.index:
         f_dt = pd.concat([factors_dict[factor_name].loc[dt] for factor_name in ic_df.columns], axis=1).dropna()
         if len(f_dt) == 0:
@@ -271,6 +275,8 @@ def ic_weight(ic_df,
     :return: weight_df:因子权重(pd.Dataframe),
              索引（index)为datetime,columns为待合成的因子名称。
     """
+    # t-n ~ t天的ic,用到了截止到t+period的数据（算收益）,
+    # 算得的权重用于t+period的因子进行加权
     n = rollback_period
     weight_df = pd.DataFrame(index=ic_df.index, columns=ic_df.columns)
     for dt in ic_df.index:
@@ -306,6 +312,8 @@ def ir_weight(ic_df,
     :return: weight_df:因子权重(pd.Dataframe),
              索引（index)为datetime,columns为待合成的因子名称。
     """
+    # t-n ~ t天的ic_ir,用到了截止到t+period的数据（算收益）,
+    # 算得的权重用于t+period的因子进行加权
     n = rollback_period
     weight_df = pd.DataFrame(index=ic_df.index, columns=ic_df.columns)
     for dt in ic_df.index:
@@ -418,6 +426,8 @@ def combine_factors(factors_dict=None,
             if _props['low'] is None:
                 _props['low'] = dv.get_ts("low_adj")
 
+        # 此处计算的ic,用到的因子值是shift(1)后的
+        # t日ic计算逻辑:t-1的因子数据，t日决策买入，t+n天后卖出对应的ic
         ic_df = get_factors_ic_df(factors_dict=factors_dict,
                                   **_props)
         if weighted_method == 'max_IR':
@@ -434,8 +444,12 @@ def combine_factors(factors_dict=None,
                              _props['period'],
                              _props["rollback_period"])
         elif weighted_method == "max_IC":
+            # 计算t期因子ic用的是t-1期因子，所以要把因子数据shift(1)
+            shift_factors = {
+                factor_name: factors_dict[factor_name].shift(1) for factor_name in factors_dict.keys()
+            }
             return max_IC_weight(ic_df,
-                                 factors_dict,
+                                 shift_factors,
                                  _props['period'],
                                  _props["covariance_type"])
 
