@@ -467,7 +467,7 @@ class AlphaBacktestInstance(BacktestInstance):
             mask = dates > date
             return dates[mask][n-1]
         else:
-            return self.ctx.data_api.get_next_trade_date(date, n)
+            return self.ctx.data_api.query_next_trade_date(date, n)
     
     def _get_last_trade_date(self, date):
         if self.ctx.dataview is not None:
@@ -475,7 +475,7 @@ class AlphaBacktestInstance(BacktestInstance):
             mask = dates < date
             return dates[mask][-1]
         else:
-            return self.ctx.data_api.get_last_trade_date(date)
+            return self.ctx.data_api.query_last_trade_date(date)
     
     def go_next_rebalance_day(self):
         """
@@ -500,9 +500,6 @@ class AlphaBacktestInstance(BacktestInstance):
                 next_period_day = jutil.get_next_period_day(current_date, self.ctx.strategy.period,
                                                             n=self.ctx.strategy.n_periods,
                                                             extra_offset=self.ctx.strategy.days_delay)
-                if next_period_day > self.end_date:
-                    return True
-                
                 # update current_date: next_period_day is a workday, but not necessarily a trade date
                 if self._is_trade_date(next_period_day):
                     current_date = next_period_day
@@ -511,7 +508,10 @@ class AlphaBacktestInstance(BacktestInstance):
                         current_date = self._get_next_trade_date(next_period_day)
                     except IndexError:
                         return True
-        
+                
+            if current_date > self.end_date:
+                return True
+
             # update re-balance date
             if self.current_rebalance_date > 0:
                 self.last_rebalance_date = self.current_rebalance_date
@@ -700,7 +700,7 @@ class EventBacktestInstance(BacktestInstance):
         if self.ctx.dataview is not None:
             df_quotes = self.ctx.dataview.get(symbol=symbols,
                                               start_date=date, end_date=date,
-                                              fields='open,high,low,close,volume,oi,trade_date,time',
+                                              fields='open,high,low,close,volume,oi,trade_date,date,time',
                                               data_format='long')
         elif self.ctx.data_api is not None:
             df_quotes, _ = self.ctx.data_api.bar(symbol=symbols,
@@ -733,18 +733,17 @@ class EventBacktestInstance(BacktestInstance):
             return dict()
     
         # create nested dict
-        df_quotes = df_quotes.sort_values(['trade_date', 'time', 'symbol'])
+        df_quotes = df_quotes.sort_values(['date', 'time', 'symbol'])
         res = []
-        for (date, time), df in df_quotes.groupby(by=['trade_date', 'time']):
+        for time, df in df_quotes.groupby(by=['time'], sort=False):
             quotes_list = Bar.create_from_df(df)
             dic = {quote.symbol: quote for quote in quotes_list}
-            res.append((date, time, dic))
-        
+            res.append((time, dic))
         return res
     
     def _run_bar(self):
         """Quotes of different symbols will be aligned into one dictionary."""
-        trade_dates_arr = self.ctx.data_api.get_trade_date_range(self.start_date, self.end_date)
+        trade_dates_arr = self.ctx.data_api.query_trade_dates(self.start_date, self.end_date)
 
         last_trade_date = trade_dates_arr[0]
         for trade_date in trade_dates_arr:
@@ -752,7 +751,7 @@ class EventBacktestInstance(BacktestInstance):
             self.on_new_day(trade_date)
             
             list_of_quotes_tuples = self._create_time_symbol_bars(trade_date)
-            for _, time, quotes_dic in list_of_quotes_tuples:
+            for time, quotes_dic in list_of_quotes_tuples:
                 self._process_quote_bar(quotes_dic)
             
             self.on_after_market_close()
