@@ -1075,7 +1075,7 @@ class DataView(object):
             self.append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
-    def add_formula(self, field_name, formula, is_quarterly, overwrite=True,
+    def add_formula(self, field_name, formula, is_quarterly, overwrite=False,
                     formula_func_name_style='camel', data_api=None,
                     within_index=True):
         """
@@ -1090,7 +1090,7 @@ class DataView(object):
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
         overwrite : bool, optional
-            Whether overwrite existing field. True by default.
+            Whether overwrite existing field. False by default.
         formula_func_name_style : {'upper', 'lower'}, optional
         data_api : RemoteDataService, optional
         within_index : bool
@@ -1158,7 +1158,7 @@ class DataView(object):
             df_expanded = align(df_eval, df_ann, self.dates)
             self.append_df(df_expanded, field_name, is_quarterly=False)
 
-    def append_df(self, df, field_name, is_quarterly=False):
+    def append_df(self, df, field_name, is_quarterly=False, overwrite=False):
         """
         Append DataFrame to existing multi-index DataFrame and add corresponding field name.
         
@@ -1168,13 +1168,22 @@ class DataView(object):
         field_name : str
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
-            
+        overwrite : bool, optional
+            Whether overwrite existing field. False by default.
         Notes
         -----
         append_df does not support overwrite. To overwrite a field, you must first do self.remove_fields(),
         then append_df() again.
         
         """
+        if field_name in self.fields:
+            if overwrite:
+                self.remove_field(field_name)
+                print("Field [{:s}] is overwritten.".format(field_name))
+            else:
+                print("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
+                return
+
         df = df.copy()
         if isinstance(df, pd.DataFrame):
             pass
@@ -2132,7 +2141,7 @@ class EventDataView(object):
             self.append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
-    def add_formula(self, field_name, formula, is_quarterly, overwrite=True,
+    def add_formula(self, field_name, formula, is_quarterly, overwrite=False,
                     formula_func_name_style='camel', data_api=None,
                     within_index=True):
         """
@@ -2147,7 +2156,7 @@ class EventDataView(object):
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
         overwrite : bool, optional
-            Whether overwrite existing field. True by default.
+            Whether overwrite existing field. False by default.
         formula_func_name_style : {'upper', 'lower'}, optional
         data_api : RemoteDataService, optional
         within_index : bool
@@ -2215,7 +2224,7 @@ class EventDataView(object):
             df_expanded = align(df_eval, df_ann, self.dates)
             self.append_df(df_expanded, field_name, is_quarterly=False)
 
-    def append_df(self, df, field_name, is_quarterly=False):
+    def append_df(self, df, field_name, is_quarterly=False, overwrite=False):
         """
         Append DataFrame to existing multi-index DataFrame and add corresponding field name.
         
@@ -2225,13 +2234,22 @@ class EventDataView(object):
         field_name : str
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
-            
+        overwrite : bool, optional
+            Whether overwrite existing field. False by default.
         Notes
         -----
         append_df does not support overwrite. To overwrite a field, you must first do self.remove_fields(),
         then append_df() again.
         
         """
+        if field_name in self.fields:
+            if overwrite:
+                self.remove_field(field_name)
+                print("Field [{:s}] is overwritten.".format(field_name))
+            else:
+                print("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
+                return
+
         df = df.copy()
         if isinstance(df, pd.DataFrame):
             pass
@@ -2324,7 +2342,7 @@ class EventDataView(object):
         Returns
         -------
         bool
-            whether add successfully.
+            whether remove successfully.
 
         """
         if isinstance(field_names, basestring):

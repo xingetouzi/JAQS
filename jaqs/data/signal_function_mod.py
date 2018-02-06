@@ -12,25 +12,42 @@ def ta(ta_method='MA',
        High=None,
        Low=None,
        Close=None,
+       Volume=None,
        *args,
        **kwargs):
+
     if not isinstance(ta_method, str):
         raise ValueError("格式错误!Ta方法需指定调用的talib函数名(str),检测到传入的为%s,需要传入str" % (type(ta_method)))
     else:
         if not (ta_method in abstract.__dict__):
             raise ValueError("指定的talib函数名有误,检测到传入的为%s,调用的talib库仅支持%s" % (ta_method, str(abstract.__dict__.keys())))
 
-    if not (isinstance(Open, pd.DataFrame)) \
-            or not (isinstance(High, pd.DataFrame)) \
-            or not (isinstance(Low, pd.DataFrame)) \
-            or not (isinstance(Close, pd.DataFrame)):
-        raise ValueError("Open,High,Low,Close均需要按顺序被传入,不能为空,需要为pd.Dataframe")
+    candle_dict = {"open": Open,
+                   "high": High,
+                   "low": Low,
+                   "close": Close,
+                   "volume": Volume}
+
+    waiting_for_pop = []
+    for candle_type in candle_dict.keys():
+        if candle_dict[candle_type] is None:
+            waiting_for_pop.append(candle_type)
+            continue
+        if not (isinstance(candle_dict[candle_type], pd.DataFrame)):
+            raise ValueError("%s需要的格式为pandas.Dataframe,此处为%s."%(candle_type,type(candle_dict[candle_type])))
+        if candle_dict[candle_type].size == 0:
+            raise ValueError("%s为空,请检查对应的传入数据." % (candle_type, ))
+    # 剔除K线数据中的None
+    for i in waiting_for_pop:
+        candle_dict.pop(i)
 
     results = []
-    candle_pannel = pd.Panel.from_dict({"open": Open, "high": High, "low": Low, "close": Close})
+    candle_pannel = pd.Panel.from_dict(candle_dict)
+
     for sec in candle_pannel.minor_axis:
         df = candle_pannel.minor_xs(sec).dropna()
         if len(df) == 0:
+            print("%s数据缺失严重,无法完成指标计算,请检查是否存在数据问题." % (sec,))
             continue
         result = pd.DataFrame(getattr(abstract, ta_method)(df, *args, **kwargs))
 
@@ -48,7 +65,10 @@ def ta(ta_method='MA',
         result.columns = [sec, ]
         results.append(result)
 
-    return pd.concat(results, axis=1)
+    if len(results) == 0:
+        return None
+    else:
+        return pd.concat(results, axis=1)
 
 
 # 最大值的坐标

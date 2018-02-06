@@ -53,9 +53,9 @@ def orthogonalize(factors_dict=None,
     for date in factor_value_list[0].index:
         data = list(map(partial(get_vector, date), factor_value_list))
         data = pd.concat(data, axis=1, join="inner")
+        data = data.dropna()
         if len(data) == 0:
             continue
-        data = data.dropna()
         data = pd.DataFrame(Schmidt(data), index=data.index)
         data.columns = factor_name_list
         for factor_name in factor_name_list:

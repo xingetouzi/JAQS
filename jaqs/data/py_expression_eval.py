@@ -367,9 +367,25 @@ class Parser(object):
     # functions
     # ta function
     def ta(self,
+           ta_method,
+           ta_column,
+           Open,
+           High,
+           Low,
+           Close,
+           Volume,
            *args,
            **kwargs):
-        return sfm.ta(*args, **kwargs)
+
+        return sfm.ta(ta_method,
+                      ta_column,
+                      Open,
+                      High,
+                      Low,
+                      Close,
+                      Volume,
+                      *args,
+                      **kwargs)
 
     def ts_argmax(self,*args,
            **kwargs):
