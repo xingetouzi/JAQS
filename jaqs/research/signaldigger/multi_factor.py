@@ -82,6 +82,7 @@ def get_factors_ic_df(factors_dict,
                       price,
                       high=None,
                       low=None,
+                      group=None,
                       benchmark_price=None,
                       period=5,
                       quantiles=5,
@@ -126,6 +127,7 @@ def get_factors_ic_df(factors_dict,
         price,
         high=high,
         low=low,
+        group=group,
         benchmark_price=benchmark_price,
         period=period,
         n_quantiles=quantiles,
@@ -143,16 +145,25 @@ def get_factors_ic_df(factors_dict,
         factor_value = factors_dict[factor_name]
         signal_data = sc.get_signal_data(factor_value)
         if ret_type in signal_data.columns:
-            signal_data = signal_data[["signal", ret_type]]
-            signal_data.columns = ["signal", "return"]
-            ic = pd.DataFrame(pfm.calc_signal_ic(signal_data))
+            origin_fields = ["signal", ret_type]
+            new_fields = ["signal", "return"]
+            if group is not None:
+                origin_fields.append("group")
+                new_fields.append("group")
+            signal_data = signal_data[origin_fields]
+            signal_data.columns = new_fields
+            ic = pd.DataFrame(pfm.calc_signal_ic(signal_data, group is not None))
             ic.columns = [factor_name, ]
             ic_table.append(ic)
         else:
             raise ValueError("signal_data中不包含%s收益,无法进行ic计算!" % (ret_type,))
 
-    ic_df = pd.concat(ic_table, axis=1).dropna().reindex(times)
-
+    if group is None:
+        ic_df = pd.concat(ic_table, axis=1).dropna().reindex(times)
+    else:
+        ic_df = pd.concat(ic_table, axis=1).dropna()
+        ic_df = ic_df.reindex(pd.MultiIndex.from_product([times,ic_df.index.levels[1]],
+                                                         names=["trade_date","group"]))
     return ic_df
 
 

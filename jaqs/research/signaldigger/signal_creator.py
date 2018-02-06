@@ -13,6 +13,7 @@ class SignalCreator(object):
                  ret=None,
                  high=None,
                  low=None,
+                 group=None,
                  n_quantiles=5,
                  mask=None,
                  can_enter=None,
@@ -35,6 +36,7 @@ class SignalCreator(object):
         self.ret = ret
         self.high = high
         self.low = low
+        self.group = group
         self.n_quantiles = n_quantiles
 
         if mask is not None:
@@ -78,6 +80,10 @@ class SignalCreator(object):
             assert np.all(signal.columns == self.can_exit.columns)
         else:
             self.can_exit = pd.DataFrame(index=signal.index, columns=signal.columns, data=True)
+
+        if self.group is not None:
+            assert np.all(signal.index == self.group.index)
+            assert np.all(signal.columns == self.group.columns)
 
         if self.signal_ret is not None:
             for ret_type in self.signal_ret.keys():
@@ -197,6 +203,9 @@ class SignalCreator(object):
         for ret_type in self.signal_ret.keys():
             if self.signal_ret[ret_type] is not None:
                 res[ret_type] = stack_td_symbol(self.signal_ret[ret_type]).fillna(0)  # 收益
+
+        if self.group is not None:
+            res["group"] = stack_td_symbol(self.group)
 
         res['quantile'] = stack_td_symbol(df_quantile)  # quantile
         mask = stack_td_symbol(mask)

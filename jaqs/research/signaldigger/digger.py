@@ -48,6 +48,7 @@ class SignalDigger(object):
     def process_signal_before_analysis(self,
                                        signal, price=None, ret=None, benchmark_price=None,
                                        high=None, low=None,
+                                       group=None,
                                        period=5, n_quantiles=5,
                                        mask=None,
                                        can_enter=None,
@@ -63,16 +64,29 @@ class SignalDigger(object):
             Index is date, columns are stocks.
         price : pd.DataFrame
             Index is date, columns are stocks.
+        high : pd.DataFrame
+            Index is date, columns are stocks.
+        low : pd.DataFrame
+            Index is date, columns are stocks.
         ret : pd.DataFrame
+            Index is date, columns are stocks.
+        group : pd.DataFrame
             Index is date, columns are stocks.
         benchmark_price : pd.DataFrame or pd.Series or None
             Price of benchmark.
         mask : pd.DataFrame
             Data cells that should NOT be used.
+        can_enter: pd.DataFrame
+            Date the security can be trade and BUY.
+        can_exit:pd.DataFrame
+            Date the security can be trade and SELL.
         n_quantiles : int
         period : int
             periods to compute forward returns on.
-
+        forward :bool
+            Return cal method. True by default.
+        commission: float
+            commission ratio per trade.
         Returns
         -------
         res : pd.DataFrame
@@ -119,6 +133,9 @@ class SignalDigger(object):
                 bool)  # dtype of can_exit could be float. So we need to convert.
         else:
             can_exit = pd.DataFrame(index=signal.index, columns=signal.columns, data=True)
+        if group is not None:
+            assert np.all(signal.index == group.index)
+            assert np.all(signal.columns == group.columns)
 
         signal = jutil.fillinf(signal)
 
@@ -239,6 +256,8 @@ class SignalDigger(object):
             res["upside_ret"] = stack_td_symbol(upside_ret).fillna(0)
         if downside_ret is not None:
             res["downside_ret"] = stack_td_symbol(downside_ret).fillna(0)
+        if group is not None:
+            res["group"] = stack_td_symbol(group)
         res['quantile'] = df_quantile
         res = res.loc[~(mask.iloc[:, 0]), :]
 

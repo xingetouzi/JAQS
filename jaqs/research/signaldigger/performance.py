@@ -8,7 +8,7 @@ import statsmodels.api as sm
 from jaqs.trade.common import CALENDAR_CONST
 
 
-def calc_signal_ic(signal_data):
+def calc_signal_ic(signal_data, by_group=False):
     """
     Computes the Spearman Rank Correlation based Information Coefficient (IC)
     between signal values and N period forward returns for each period in
@@ -18,7 +18,8 @@ def calc_signal_ic(signal_data):
     ----------
     signal_data : pd.DataFrame - MultiIndex
         Index is pd.MultiIndex ['trade_date', 'symbol'], columns = ['signal', 'return', 'quantile']
-
+    by_group : bool
+        If True, compute period wise IC separately for each group.
     Returns
     -------
     ic : pd.DataFrame
@@ -32,6 +33,8 @@ def calc_signal_ic(signal_data):
     signal_data = signal_data.copy()
 
     grouper = ['trade_date']
+    if by_group:
+        grouper.append('group')
 
     ic = signal_data.groupby(grouper).apply(src_ic)
     ic = pd.DataFrame(ic)
@@ -53,7 +56,7 @@ def calc_ic_stats_table(ic_data):
     return ic_summary_table
 
 
-def mean_information_coefficient(ic, by_time=None):
+def mean_information_coefficient(ic, by_time=None, by_group=False):
     """
     Get the mean information coefficient of specified groups.
     Answers questions like:
@@ -74,16 +77,23 @@ def mean_information_coefficient(ic, by_time=None):
         Mean Spearman Rank correlation between signal and provided
         forward price movement windows.
     """
-
     grouper = []
     if by_time is not None:
         grouper.append(pd.TimeGrouper(by_time))
+    if by_group:
+        grouper.append('group')
 
     if len(grouper) == 0:
         ic = ic.mean()
-
     else:
-        ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
+        if isinstance(ic.index, pd.MultiIndex):
+            ic.index = pd.MultiIndex(levels=[pd.to_datetime(ic.index.levels[0],
+                                                            format="%Y%m%d"),
+                                             ic.index.levels[1]],
+                                     labels=ic.index.labels,
+                                     names=ic.index.names)
+        else:
+            ic.index = pd.to_datetime(ic.index, format="%Y%m%d")
         ic = (ic.reset_index().set_index('trade_date').groupby(grouper).mean())
 
     return ic

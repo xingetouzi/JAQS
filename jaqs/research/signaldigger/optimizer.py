@@ -128,18 +128,18 @@ class Optimizer(object):
         self.is_event = is_event
         self.is_quarterly = is_quarterly
         self.signal_creator = SignalCreator(
-            price,
-            ret,
-            high,
-            low,
-            n_quantiles,
-            mask,
-            can_enter,
-            can_exit,
-            period,
-            benchmark_price,
-            forward,
-            commission
+            price=price,
+            ret=ret,
+            high=high,
+            low=low,
+            n_quantiles=n_quantiles,
+            mask=mask,
+            can_enter=can_enter,
+            can_exit=can_exit,
+            period=period,
+            benchmark_price=benchmark_price,
+            forward=forward,
+            commission=commission
         )
         self.all_signals = None
         self.all_signals_perf = None
