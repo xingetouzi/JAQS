@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals
 import numpy as np
-import pandas as pd
-
 from jaqs.data import DataView
 from jaqs.data import RemoteDataService
 from jaqs.research import SignalDigger

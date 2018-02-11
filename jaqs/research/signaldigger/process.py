@@ -248,5 +248,7 @@ def neutralize(factor_df,
         result.append(residuals)
 
     result = pd.concat(result, axis=1).T
-
+    # 恢复在中性化过程中剔除的行和列
+    result = result.reindex(factor_df.index)
+    result = result.T.reindex(factor_df.columns).T
     return result

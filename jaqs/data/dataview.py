@@ -978,7 +978,7 @@ class DataView(object):
                 self.remove_field(field_name)
                 print("Field [{:s}] is overwritten.".format(field_name))
             else:
-                print("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
+                print("Append df failed: name [{:s}] exist. Try another name.".format(field_name))
                 return
 
         df = df.copy()
@@ -2038,7 +2038,7 @@ class EventDataView(object):
                 self.remove_field(field_name)
                 print("Field [{:s}] is overwritten.".format(field_name))
             else:
-                print("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
+                print("Append df failed: name [{:s}] exist. Try another name.".format(field_name))
                 return
 
         df = df.copy()
