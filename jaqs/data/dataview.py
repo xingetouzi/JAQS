@@ -854,7 +854,7 @@ class DataView(object):
                      'zz1',
                      'zz2']
         if field_name in group_map:
-            self._prepare_group(field_name)
+            self._prepare_group([field_name])
             return True
 
         merge_d, merge_q = self._prepare_daily_quarterly([field_name])
@@ -1926,7 +1926,7 @@ class EventDataView(object):
                      'zz1',
                      'zz2']
         if field_name in group_map:
-            self._prepare_group(field_name)
+            self._prepare_group([field_name])
             return True
 
         merge_d, merge_q = self._prepare_daily_quarterly([field_name])
