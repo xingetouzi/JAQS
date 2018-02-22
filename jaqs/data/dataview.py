@@ -846,6 +846,17 @@ class DataView(object):
             print("Field name [{}] not valid, ignore.".format(field_name))
             return False
 
+        # prepare group type
+        group_map = ['sw1',
+                     'sw2',
+                     'sw3',
+                     'sw4',
+                     'zz1',
+                     'zz2']
+        if field_name in group_map:
+            self._prepare_group(field_name)
+            return True
+
         merge_d, merge_q = self._prepare_daily_quarterly([field_name])
 
         if self._is_daily_field(field_name):
@@ -1906,6 +1917,17 @@ class EventDataView(object):
         if not self._is_predefined_field(field_name):
             print("Field name [{}] not valid, ignore.".format(field_name))
             return False
+
+        # prepare group type
+        group_map = ['sw1',
+                     'sw2',
+                     'sw3',
+                     'sw4',
+                     'zz1',
+                     'zz2']
+        if field_name in group_map:
+            self._prepare_group(field_name)
+            return True
 
         merge_d, merge_q = self._prepare_daily_quarterly([field_name])
 
