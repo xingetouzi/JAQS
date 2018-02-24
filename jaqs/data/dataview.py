@@ -917,7 +917,9 @@ class DataView(object):
             self.append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
-    def add_formula(self, field_name, formula, is_quarterly, overwrite=True,
+    def add_formula(self, field_name, formula, is_quarterly,
+                    add_data = False,
+                    overwrite=True,
                     formula_func_name_style='camel', data_api=None,
                     within_index=True):
         """
@@ -931,6 +933,8 @@ class DataView(object):
             A custom name for the new field.
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
+        add_data: bool
+            Whether add new data to the data set or return directly.
         overwrite : bool, optional
             Whether overwrite existing field. True by default.
         formula_func_name_style : {'upper', 'lower'}, optional
@@ -947,14 +951,15 @@ class DataView(object):
         if data_api is not None:
             self.data_api = data_api
 
-        if field_name in self.fields:
-            if overwrite:
-                self.remove_field(field_name)
-                print("Field [{:s}] is overwritten.".format(field_name))
-            else:
-                raise ValueError("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
-        elif self._is_predefined_field(field_name):
-            raise ValueError("[{:s}] is alread a pre-defined field. Please use another name.".format(field_name))
+        if add_data:
+            if field_name in self.fields:
+                if overwrite:
+                    self.remove_field(field_name)
+                    print("Field [{:s}] is overwritten.".format(field_name))
+                else:
+                    raise ValueError("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
+            elif self._is_predefined_field(field_name):
+                raise ValueError("[{:s}] is alread a pre-defined field. Please use another name.".format(field_name))
 
         parser = Parser()
         parser.set_capital(formula_func_name_style)
@@ -994,12 +999,15 @@ class DataView(object):
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
 
-        self.append_df(df_eval, field_name, is_quarterly=is_quarterly)
+        if add_data:
+            self.append_df(df_eval, field_name, is_quarterly=is_quarterly)
 
         if is_quarterly:
             df_ann = self._get_ann_df()
             df_expanded = align(df_eval, df_ann, self.dates)
-            self.append_df(df_expanded, field_name, is_quarterly=False)
+            return df_expanded
+        else:
+            return df_eval
 
     def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
@@ -1019,6 +1027,43 @@ class DataView(object):
         then append_df() again.
 
         """
+        def _append_df(df, field_name, is_quarterly=False):
+            df = df.copy()
+            if isinstance(df, pd.DataFrame):
+                pass
+            elif isinstance(df, pd.Series):
+                df = pd.DataFrame(df)
+            else:
+                raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
+
+            if is_quarterly:
+                the_data = self.data_q
+            else:
+                the_data = self.data_d
+
+            exist_symbols = the_data.columns.levels[0]
+            if len(df.columns) < len(exist_symbols):
+                df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
+                df2.update(df)
+                df = df2
+            elif len(df.columns) > len(exist_symbols):
+                df = df.loc[:, exist_symbols]
+            multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
+            df.columns = multi_idx
+
+            # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
+            #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
+            the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
+            the_data = the_data.sort_index(axis=1)
+            # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+            # sort_columns(the_data)
+
+            if is_quarterly:
+                self.data_q = the_data
+            else:
+                self.data_d = the_data
+            self._add_field(field_name, is_quarterly)
+
         if field_name in self.fields:
             if overwrite:
                 self.remove_field(field_name)
@@ -1027,41 +1072,14 @@ class DataView(object):
                 print("Append df failed: name [{:s}] exist. Try another name.".format(field_name))
                 return
 
-        df = df.copy()
-        if isinstance(df, pd.DataFrame):
-            pass
-        elif isinstance(df, pd.Series):
-            df = pd.DataFrame(df)
-        else:
-            raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
+        # 季度添加至data_q　日度添加至data_d
+        _append_df(df, field_name, is_quarterly=is_quarterly)
 
+        # 季度添加至data_d
         if is_quarterly:
-            the_data = self.data_q
-        else:
-            the_data = self.data_d
-
-        exist_symbols = the_data.columns.levels[0]
-        if len(df.columns) < len(exist_symbols):
-            df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
-            df2.update(df)
-            df = df2
-        elif len(df.columns) > len(exist_symbols):
-            df = df.loc[:, exist_symbols]
-        multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
-        df.columns = multi_idx
-
-        # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
-        #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
-        the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
-        the_data = the_data.sort_index(axis=1)
-        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
-        # sort_columns(the_data)
-
-        if is_quarterly:
-            self.data_q = the_data
-        else:
-            self.data_d = the_data
-        self._add_field(field_name, is_quarterly)
+            df_ann = self._get_ann_df()
+            df_expanded = align(df, df_ann, self.dates)
+            _append_df(df_expanded, field_name, is_quarterly=False)
 
     def append_df_symbol(self, df, symbol_name):
         """
@@ -2086,7 +2104,9 @@ class EventDataView(object):
             self.append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
-    def add_formula(self, field_name, formula, is_quarterly, overwrite=True,
+    def add_formula(self, field_name, formula, is_quarterly,
+                    add_data=False,
+                    overwrite=True,
                     formula_func_name_style='camel', data_api=None,
                     within_index=True):
         """
@@ -2094,12 +2114,14 @@ class EventDataView(object):
 
         Parameters
         ----------
-        formula : str
+        formula : str or unicode
             A formula contains operations and function calls.
-        field_name : str
+        field_name : str or unicode
             A custom name for the new field.
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
+        add_data: bool
+            Whether add new data to the data set or return directly.
         overwrite : bool, optional
             Whether overwrite existing field. True by default.
         formula_func_name_style : {'upper', 'lower'}, optional
@@ -2116,13 +2138,15 @@ class EventDataView(object):
         if data_api is not None:
             self.data_api = data_api
 
-        if field_name in self.fields:
-            if overwrite:
-                self.remove_field(field_name)
-                print("Field [{:s}] is overwritten.".format(field_name))
-            else:
-                print("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
-                return
+        if add_data:
+            if field_name in self.fields:
+                if overwrite:
+                    self.remove_field(field_name)
+                    print("Field [{:s}] is overwritten.".format(field_name))
+                else:
+                    raise ValueError("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
+            elif self._is_predefined_field(field_name):
+                raise ValueError("[{:s}] is alread a pre-defined field. Please use another name.".format(field_name))
 
         parser = Parser()
         parser.set_capital(formula_func_name_style)
@@ -2162,12 +2186,15 @@ class EventDataView(object):
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
 
-        self.append_df(df_eval, field_name, is_quarterly=is_quarterly)
+        if add_data:
+            self.append_df(df_eval, field_name, is_quarterly=is_quarterly)
 
         if is_quarterly:
             df_ann = self._get_ann_df()
             df_expanded = align(df_eval, df_ann, self.dates)
-            self.append_df(df_expanded, field_name, is_quarterly=False)
+            return df_expanded
+        else:
+            return df_eval
 
     def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
@@ -2176,7 +2203,7 @@ class EventDataView(object):
         Parameters
         ----------
         df : pd.DataFrame or pd.Series
-        field_name : str
+        field_name : str or unicode
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
         overwrite : bool, optional
@@ -2187,6 +2214,44 @@ class EventDataView(object):
         then append_df() again.
 
         """
+
+        def _append_df(df, field_name, is_quarterly=False):
+            df = df.copy()
+            if isinstance(df, pd.DataFrame):
+                pass
+            elif isinstance(df, pd.Series):
+                df = pd.DataFrame(df)
+            else:
+                raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
+
+            if is_quarterly:
+                the_data = self.data_q
+            else:
+                the_data = self.data_d
+
+            exist_symbols = the_data.columns.levels[0]
+            if len(df.columns) < len(exist_symbols):
+                df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
+                df2.update(df)
+                df = df2
+            elif len(df.columns) > len(exist_symbols):
+                df = df.loc[:, exist_symbols]
+            multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
+            df.columns = multi_idx
+
+            # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
+            #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
+            the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
+            the_data = the_data.sort_index(axis=1)
+            # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+            # sort_columns(the_data)
+
+            if is_quarterly:
+                self.data_q = the_data
+            else:
+                self.data_d = the_data
+            self._add_field(field_name, is_quarterly)
+
         if field_name in self.fields:
             if overwrite:
                 self.remove_field(field_name)
@@ -2195,41 +2260,14 @@ class EventDataView(object):
                 print("Append df failed: name [{:s}] exist. Try another name.".format(field_name))
                 return
 
-        df = df.copy()
-        if isinstance(df, pd.DataFrame):
-            pass
-        elif isinstance(df, pd.Series):
-            df = pd.DataFrame(df)
-        else:
-            raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
+        # 季度添加至data_q　日度添加至data_d
+        _append_df(df, field_name, is_quarterly=is_quarterly)
 
+        # 季度添加至data_d
         if is_quarterly:
-            the_data = self.data_q
-        else:
-            the_data = self.data_d
-
-        exist_symbols = the_data.columns.levels[0]
-        if len(df.columns) < len(exist_symbols):
-            df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
-            df2.update(df)
-            df = df2
-        elif len(df.columns) > len(exist_symbols):
-            df = df.loc[:, exist_symbols]
-        multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
-        df.columns = multi_idx
-
-        # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
-        #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
-        the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
-        the_data = the_data.sort_index(axis=1)
-        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
-        # sort_columns(the_data)
-
-        if is_quarterly:
-            self.data_q = the_data
-        else:
-            self.data_d = the_data
-        self._add_field(field_name, is_quarterly)
+            df_ann = self._get_ann_df()
+            df_expanded = align(df, df_ann, self.dates)
+            _append_df(df_expanded, field_name, is_quarterly=False)
 
     def append_df_symbol(self, df, symbol_name):
         """

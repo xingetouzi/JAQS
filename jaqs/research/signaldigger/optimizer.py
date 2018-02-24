@@ -235,11 +235,9 @@ class Optimizer(object):
                 formula = self.formula
                 for vars in para_dict.keys():
                     formula = formula.replace(vars, str(para_dict[vars]))
-                self.dataview.add_formula(self.name,
-                                          formula,
-                                          is_quarterly=self.is_quarterly)
-                signal = self.dataview.get_ts(self.name)
-                self.dataview.remove_field(self.name)
+                signal = self.dataview.add_formula(self.name,
+                                                   formula,
+                                                   is_quarterly=self.is_quarterly)
                 self.all_signals[self.name + str(para_dict)] = self.cal_signal(signal)
 
     def get_all_signals_perf(self, in_sample_range=None):
