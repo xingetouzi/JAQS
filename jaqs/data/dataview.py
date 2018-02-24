@@ -23,7 +23,7 @@ class DataView(object):
     """
     Prepare data before research / trade. Support file I/O.
     Support: add field, add formula, save / load.
-    
+
     Attributes
     ----------
     data_api : RemoteDataService
@@ -39,7 +39,7 @@ class DataView(object):
     data_q : pd.DataFrame
         All quarterly frequency data will be merged and stored here.
         index is date, columns is symbol-field MultiIndex
-    
+
     """
 
     def __init__(self):
@@ -188,55 +188,72 @@ class DataView(object):
              "spe_bal_netcash_inc", "tot_bal_netcash_inc", "spe_bal_netcash_equ_undir", "tot_bal_netcash_equ_undir",
              "spe_bal_netcash_inc_undir", "tot_bal_netcash_inc_undir"}
         self.fin_indicator = \
-            {"extraordinary","deductedprofit","grossmargin","operateincome","investincome","stmnote_finexp",
-             "stm_is","ebit_daily","ebitda""fcff","fcfe","exinterestdebt_current","exinterestdebt_noncurrent","interestdebt",
-             "netdebt","tangibleasset","workingcapital","networkingcapital","investcapital","retainedearnings","eps_basic_daily", # TODO eps_basic
-             "eps_diluted","eps_diluted2","bps","ocfps","grps","orps","surpluscapitalps","surplusreserveps","undistributedps",
-             "retainedps","cfps","ebitps","fcffps","fcfeps","netprofitmargin","grossprofitmargin","cogstosales",
-             "expensetosales","profittogr","saleexpensetogr","adminexpensetogr","finaexpensetogr","impairtogr_ttm",
-             "gctogr","optogr","ebittogr","roe","roe_deducted","roa2","roa","roic","roe_yearly","roa2_yearly","roe_avg",
-             "operateincometoebt","investincometoebt","nonoperateprofittoebt","taxtoebt","deductedprofittoprofit","salescashintoor",
-             "ocftoor","ocftooperateincome","capitalizedtoda","debttoassets","assetstoequity","dupont_assetstoequity",
-             "catoassets","ncatoassets","tangibleassetstoassets","intdebttototalcap","equitytototalcapital","currentdebttodebt",
-             "longdebtodebt","current","quick","cashratio","ocftoshortdebt","debttoequity","equitytodebt",
-             "equitytointerestdebt","tangibleassettodebt","tangassettointdebt","tangibleassettonetdebt","ocftodebt",
-             "ocftointerestdebt","ocftonetdebt","ebittointerest","longdebttoworkingcapital","ebitdatodebt","turndays",
-             "invturndays","arturndays","invturn","arturn","caturn","faturn","assetsturn","roa_yearly","dupont_roa",
-             "s_stm_bs","prefinexpense_opprofit","nonopprofit","optoebt","noptoebt","ocftoprofit","cashtoliqdebt",
-             "cashtoliqdebtwithinterest","optoliqdebt","optodebt","roic_yearly","tot_faturn","profittoop","qfa_operateincome",
-             "qfa_investincome","qfa_deductedprofit","qfa_eps","qfa_netprofitmargin","qfa_grossprofitmargin","qfa_expensetosales",
-             "qfa_profittogr","qfa_saleexpensetogr","qfa_adminexpensetogr","qfa_finaexpensetogr","qfa_impairtogr_ttm",
-             "qfa_gctogr","qfa_optogr","qfa_roe","qfa_roe_deducted","qfa_roa","qfa_operateincometoebt","qfa_investincometoebt",
-             "qfa_deductedprofittoprofit","qfa_salescashintoor","qfa_ocftosales","qfa_ocftoor","yoyeps_basic","yoyeps_diluted",
-             "yoyocfps","yoyop","yoyebt","yoynetprofit","yoynetprofit_deducted","yoyocf","yoyroe","yoybps","yoyassets",
-             "yoyequity","yoy_tr","yoy_or","qfa_yoygr","qfa_cgrgr","qfa_yoysales","qfa_cgrsales","qfa_yoyop","qfa_cgrop",
-             "qfa_yoyprofit","qfa_cgrprofit","qfa_yoynetprofit","qfa_cgrnetprofit","yoy_equity","rd_expense","waa_roe"}
-        self .custom_daily_fields = []
-        self .custom_quarterly_fields = []
-        
+            {"extraordinary", "deductedprofit", "grossmargin", "operateincome", "investincome", "stmnote_finexp",
+             "stm_is", "ebit_daily", "ebitda""fcff", "fcfe", "exinterestdebt_current", "exinterestdebt_noncurrent",
+             "interestdebt",
+             "netdebt", "tangibleasset", "workingcapital", "networkingcapital", "investcapital", "retainedearnings",
+             "eps_basic_daily",  # TODO eps_basic
+             "eps_diluted", "eps_diluted2", "bps", "ocfps", "grps", "orps", "surpluscapitalps", "surplusreserveps",
+             "undistributedps",
+             "retainedps", "cfps", "ebitps", "fcffps", "fcfeps", "netprofitmargin", "grossprofitmargin", "cogstosales",
+             "expensetosales", "profittogr", "saleexpensetogr", "adminexpensetogr", "finaexpensetogr", "impairtogr_ttm",
+             "gctogr", "optogr", "ebittogr", "roe", "roe_deducted", "roa2", "roa", "roic", "roe_yearly", "roa2_yearly",
+             "roe_avg",
+             "operateincometoebt", "investincometoebt", "nonoperateprofittoebt", "taxtoebt", "deductedprofittoprofit",
+             "salescashintoor",
+             "ocftoor", "ocftooperateincome", "capitalizedtoda", "debttoassets", "assetstoequity",
+             "dupont_assetstoequity",
+             "catoassets", "ncatoassets", "tangibleassetstoassets", "intdebttototalcap", "equitytototalcapital",
+             "currentdebttodebt",
+             "longdebtodebt", "current", "quick", "cashratio", "ocftoshortdebt", "debttoequity", "equitytodebt",
+             "equitytointerestdebt", "tangibleassettodebt", "tangassettointdebt", "tangibleassettonetdebt", "ocftodebt",
+             "ocftointerestdebt", "ocftonetdebt", "ebittointerest", "longdebttoworkingcapital", "ebitdatodebt",
+             "turndays",
+             "invturndays", "arturndays", "invturn", "arturn", "caturn", "faturn", "assetsturn", "roa_yearly",
+             "dupont_roa",
+             "s_stm_bs", "prefinexpense_opprofit", "nonopprofit", "optoebt", "noptoebt", "ocftoprofit", "cashtoliqdebt",
+             "cashtoliqdebtwithinterest", "optoliqdebt", "optodebt", "roic_yearly", "tot_faturn", "profittoop",
+             "qfa_operateincome",
+             "qfa_investincome", "qfa_deductedprofit", "qfa_eps", "qfa_netprofitmargin", "qfa_grossprofitmargin",
+             "qfa_expensetosales",
+             "qfa_profittogr", "qfa_saleexpensetogr", "qfa_adminexpensetogr", "qfa_finaexpensetogr",
+             "qfa_impairtogr_ttm",
+             "qfa_gctogr", "qfa_optogr", "qfa_roe", "qfa_roe_deducted", "qfa_roa", "qfa_operateincometoebt",
+             "qfa_investincometoebt",
+             "qfa_deductedprofittoprofit", "qfa_salescashintoor", "qfa_ocftosales", "qfa_ocftoor", "yoyeps_basic",
+             "yoyeps_diluted",
+             "yoyocfps", "yoyop", "yoyebt", "yoynetprofit", "yoynetprofit_deducted", "yoyocf", "yoyroe", "yoybps",
+             "yoyassets",
+             "yoyequity", "yoy_tr", "yoy_or", "qfa_yoygr", "qfa_cgrgr", "qfa_yoysales", "qfa_cgrsales", "qfa_yoyop",
+             "qfa_cgrop",
+             "qfa_yoyprofit", "qfa_cgrprofit", "qfa_yoynetprofit", "qfa_cgrnetprofit", "yoy_equity", "rd_expense",
+             "waa_roe"}
+        self.custom_daily_fields = []
+        self.custom_quarterly_fields = []
+
         # co nst
-        self .ANN_DATE_FIELD_NAME = 'ann_date'
-        self .REPORT_DATE_FIELD_NAME = 'report_date'
+        self.ANN_DATE_FIELD_NAME = 'ann_date'
+        self.REPORT_DATE_FIELD_NAME = 'report_date'
         self.TRADE_STATUS_FIELD_NAME = 'trade_status'
         self.TRADE_DATE_FIELD_NAME = 'trade_date'
-    
+
     # --------------------------------------------------------------------------------------------------------
     # Properties
     @property
     def data_benchmark(self):
         return self._data_benchmark
-    
+
     @property
     def data_inst(self):
         """
-        
+
         Returns
         -------
         pd.DataFrame
 
         """
         return self._data_inst
-    
+
     @data_benchmark.setter
     def data_benchmark(self, df_new):
         if self.data_d is not None and df_new.shape[0] != self.data_d.shape[0]:
@@ -247,7 +264,7 @@ class DataView(object):
     def dates(self):
         """
         Get daily date array of the underlying data.
-        
+
         Returns
         -------
         res : np.array
@@ -260,7 +277,7 @@ class DataView(object):
             res = self.data_api.query_trade_dates(self.extended_start_date_d, self.end_date)
         else:
             raise ValueError("Cannot get dates array when neither of data and data_api exists.")
-    
+
         return res
 
     # --------------------------------------------------------------------------------------------------------
@@ -269,7 +286,7 @@ class DataView(object):
         """
         Check whether a field name is quarterly frequency.
         field_name must be pre-defined or already added.
-        
+
         Parameters
         ----------
         field_name : str
@@ -290,7 +307,7 @@ class DataView(object):
         """
         Check whether a field name is daily frequency.
         field_name must be pre-defined or already added.
-        
+
         Parameters
         ----------
         field_name : str
@@ -310,7 +327,7 @@ class DataView(object):
         """
         Check whether a field name can be recognized.
         field_name must be pre-defined or already added.
-        
+
         Parameters
         ----------
         field_name : str
@@ -325,7 +342,7 @@ class DataView(object):
     def _get_fields(self, field_type, fields, complement=False, append=False):
         """
         Get list of fields that are in ref_quarterly_fields.
-        
+
         Parameters
         ----------
         field_type : {'market_daily', 'ref_daily', 'income', 'balance_sheet', 'cash_flow', 'daily', 'quarterly'
@@ -354,22 +371,22 @@ class DataView(object):
                                           pool_map['cash_flow'],
                                           pool_map['fin_indicator'],
                                           self.custom_quarterly_fields)
-        
+
         pool = pool_map.get(field_type, None)
         if pool is None:
             raise NotImplementedError("field_type = {:s}".format(field_type))
-        
+
         s = set.intersection(set(pool), set(fields))
         if not s:
             return []
-        
+
         if complement:
             s = set(fields) - s
-            
+
         if field_type == 'market_daily' and self.all_price:
             # turnover will not be adjusted
             s.update({'open', 'high', 'close', 'low', 'vwap'})
-            
+
         if append:
             s.add('symbol')
             if field_type == 'market_daily' or field_type == 'ref_daily':
@@ -382,7 +399,7 @@ class DataView(object):
                   or field_type == 'fin_indicator'):
                 s.add(self.ANN_DATE_FIELD_NAME)
                 s.add(self.REPORT_DATE_FIELD_NAME)
-        
+
         l = list(s)
         return l
 
@@ -392,19 +409,19 @@ class DataView(object):
         """
         Initialize various attributes like start/end date, universe/symbol, fields, etc.
         If your want to parse symbol, but use a custom benchmark index, please directly assign self.data_benchmark.
-        
+
         Parameters
         ----------
         props : dict
             start_date, end_date, freq, symbol, fields, etc.
         data_api : BaseDataServer
-        
+
         """
         # data_api.init_from_config(props)
         self.data_api = data_api
-    
+
         sep = ','
-    
+
         # initialize parameters
         self.start_date = props['start_date']
         self.extended_start_date_d = jutil.shift(self.start_date, n_weeks=-8)  # query more data
@@ -413,7 +430,7 @@ class DataView(object):
         self.all_price = props.get('all_price', True)
         self.adjust_mode = props.get("adjust_mode", "post")
         self.freq = props.get('freq', 1)
-    
+
         # get and filter fields
         fields = props.get('fields', [])
         if fields:
@@ -421,13 +438,13 @@ class DataView(object):
             self.fields = [field for field in fields if self._is_predefined_field(field)]
             if len(self.fields) < len(fields):
                 print("Field name [{}] not valid, ignore.".format(set.difference(set(fields), set(self.fields))))
-    
+
         # append additional fields
         if self.all_price:
             self.fields.extend(['open_adj', 'high_adj', 'low_adj', 'close_adj',
                                 'open', 'high', 'low', 'close',
                                 'vwap', 'vwap_adj'])
-    
+
         # initialize universe/symbol
         universe = props.get('universe', "")
         symbol = props.get('symbol', "")
@@ -455,17 +472,17 @@ class DataView(object):
                           "If you want to use other benchmark, "
                           "please specify benchmark in configs.".format(repr(self.universe), self.universe[0]))
                 self.benchmark = self.universe[0]
-    
+
         print("Initialize config success.")
 
     def distributed_query(self, query_func_name, symbol, start_date, end_date, limit=100000, **kwargs):
         n_symbols = len(symbol.split(','))
         dates = self.data_api.query_trade_dates(start_date, end_date)
         n_days = len(dates)
-        
+
         if n_symbols * n_days > limit:
             n = limit // n_symbols
-            
+
             df_list = []
             i = 0
             pos1, pos2 = n * i, n * (i + 1) - 1
@@ -528,7 +545,7 @@ class DataView(object):
     def _prepare_daily_quarterly(self, fields):
         """
         Query and process data from data_api.
-        
+
         Parameters
         ----------
         fields : list
@@ -577,7 +594,7 @@ class DataView(object):
         Query data using different APIs, then store them in dict.
         period, start_date and end_date are fixed.
         Keys of dict are securitites.
-        
+
         Parameters
         ----------
         symbol : list of str
@@ -603,19 +620,22 @@ class DataView(object):
                 # no adjust prices and other market daily fields
                 df_daily, msg1 = self.distributed_query('daily', symbol_str,
                                                         start_date=self.extended_start_date_d, end_date=self.end_date,
-                                                        adjust_mode=None, fields=sep.join(fields_market_daily), limit=100000)
-                #df_daily, msg1 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
+                                                        adjust_mode=None, fields=sep.join(fields_market_daily),
+                                                        limit=100000)
+                # df_daily, msg1 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
                 #                                     adjust_mode=None, fields=sep.join(fields_market_daily))
 
                 if self.all_price:
                     adj_cols = ['open', 'high', 'low', 'close', 'vwap']
                     # adjusted prices
-                    #df_daily_adjust, msg11 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
+                    # df_daily_adjust, msg11 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
                     #                                             adjust_mode=self.adjust_mode, fields=','.join(adj_cols))
                     df_daily_adjust, msg1 = self.distributed_query('daily', symbol_str,
-                                                                   start_date=self.extended_start_date_d, end_date=self.end_date,
-                                                                   adjust_mode=self.adjust_mode, fields=sep.join(fields_market_daily), limit=100000)
-                
+                                                                   start_date=self.extended_start_date_d,
+                                                                   end_date=self.end_date,
+                                                                   adjust_mode=self.adjust_mode,
+                                                                   fields=sep.join(fields_market_daily), limit=100000)
+
                     df_daily = pd.merge(df_daily, df_daily_adjust, how='outer',
                                         on=['symbol', 'trade_date'], suffixes=('', '_adj'))
                 daily_list.append(df_daily.loc[:, fields_market_daily])
@@ -623,28 +643,35 @@ class DataView(object):
             fields_ref_daily = self._get_fields('ref_daily', fields, append=True)
             if fields_ref_daily:
                 df_ref_daily, msg2 = self.distributed_query('query_lb_dailyindicator', symbol_str,
-                                                            start_date=self.extended_start_date_d, end_date=self.end_date,
+                                                            start_date=self.extended_start_date_d,
+                                                            end_date=self.end_date,
                                                             fields=sep.join(fields_ref_daily), limit=20000)
                 daily_list.append(df_ref_daily.loc[:, fields_ref_daily])
 
             fields_income = self._get_fields('income', fields, append=True)
             if fields_income:
-                df_income, msg3 = self.data_api.query_lb_fin_stat('income', symbol_str, self.extended_start_date_q, self.end_date,
-                                                                  sep.join(fields_income), drop_dup_cols=['symbol', self.REPORT_DATE_FIELD_NAME])
+                df_income, msg3 = self.data_api.query_lb_fin_stat('income', symbol_str, self.extended_start_date_q,
+                                                                  self.end_date,
+                                                                  sep.join(fields_income),
+                                                                  drop_dup_cols=['symbol', self.REPORT_DATE_FIELD_NAME])
                 quarterly_list.append(df_income.loc[:, fields_income])
-        
+
             fields_balance = self._get_fields('balance_sheet', fields, append=True)
             if fields_balance:
-                df_balance, msg3 = self.data_api.query_lb_fin_stat('balance_sheet', symbol_str, self.extended_start_date_q, self.end_date,
-                                                                   sep.join(fields_balance), drop_dup_cols=['symbol', self.REPORT_DATE_FIELD_NAME])
+                df_balance, msg3 = self.data_api.query_lb_fin_stat('balance_sheet', symbol_str,
+                                                                   self.extended_start_date_q, self.end_date,
+                                                                   sep.join(fields_balance), drop_dup_cols=['symbol',
+                                                                                                            self.REPORT_DATE_FIELD_NAME])
                 quarterly_list.append(df_balance.loc[:, fields_balance])
-        
+
             fields_cf = self._get_fields('cash_flow', fields, append=True)
             if fields_cf:
-                df_cf, msg3 = self.data_api.query_lb_fin_stat('cash_flow', symbol_str, self.extended_start_date_q, self.end_date,
-                                                              sep.join(fields_cf), drop_dup_cols=['symbol', self.REPORT_DATE_FIELD_NAME])
+                df_cf, msg3 = self.data_api.query_lb_fin_stat('cash_flow', symbol_str, self.extended_start_date_q,
+                                                              self.end_date,
+                                                              sep.join(fields_cf),
+                                                              drop_dup_cols=['symbol', self.REPORT_DATE_FIELD_NAME])
                 quarterly_list.append(df_cf.loc[:, fields_cf])
-        
+
             fields_fin_ind = self._get_fields('fin_indicator', fields, append=True)
             if fields_fin_ind:
                 df_fin_ind, msg4 = self.data_api.query_lb_fin_stat('fin_indicator', symbol_str,
@@ -662,7 +689,7 @@ class DataView(object):
     def _merge_data(dfs, index_name='trade_date'):
         """
         Merge data from different APIs into one DataFrame.
-        
+
         Parameters
         ----------
         dfs : list of pd.DataFrame
@@ -671,11 +698,11 @@ class DataView(object):
         -------
         merge : pd.DataFrame or None
             If dfs is empty, return None
-        
+
         Notes
         -----
         Align on date index, concatenate on columns (symbol and fields)
-        
+
         """
         # dfs = [df for df in dfs if df is not None]
 
@@ -745,7 +772,8 @@ class DataView(object):
         symbol_stocks = self.data_inst.loc[mask_stocks].index.values
         symbol_str = ','.join(symbol_stocks)
         df_adj = self.data_api.query_adj_factor_daily(symbol_str,
-                                                      start_date=self.extended_start_date_d, end_date=self.end_date, div=False)
+                                                      start_date=self.extended_start_date_d, end_date=self.end_date,
+                                                      div=False)
         self.append_df(df_adj, 'adjust_factor', is_quarterly=False)
 
     def _prepare_comp_info(self):
@@ -759,7 +787,8 @@ class DataView(object):
         self.append_df(df, 'index_member', is_quarterly=False)
 
         # use weights of the first universe
-        df_weights = self.data_api.query_index_weights_daily(self.universe[0], self.extended_start_date_d, self.end_date)
+        df_weights = self.data_api.query_index_weights_daily(self.universe[0], self.extended_start_date_d,
+                                                             self.end_date)
         self.append_df(df_weights, 'index_weight', is_quarterly=False)
 
     def _prepare_report_date(self):
@@ -818,13 +847,13 @@ class DataView(object):
     def add_field(self, field_name, data_api=None):
         """
         Query and append new field to DataView.
-        
+
         Parameters
         ----------
         data_api : BaseDataServer
         field_name : str
             Must be a known field name (which is given in documents).
-        
+
         Returns
         -------
         bool
@@ -882,12 +911,12 @@ class DataView(object):
             self.append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
-    def add_formula(self, field_name, formula, is_quarterly, overwrite=False,
+    def add_formula(self, field_name, formula, is_quarterly, overwrite=True,
                     formula_func_name_style='camel', data_api=None,
                     within_index=True):
         """
         Add a new field, which is calculated using existing fields.
-        
+
         Parameters
         ----------
         formula : str or unicode
@@ -897,12 +926,12 @@ class DataView(object):
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
         overwrite : bool, optional
-            Whether overwrite existing field. False by default.
+            Whether overwrite existing field. True by default.
         formula_func_name_style : {'upper', 'lower'}, optional
         data_api : RemoteDataService, optional
         within_index : bool
             When do cross-section operatioins, whether just do within index components.
-        
+
         Notes
         -----
         Time cost of this function:
@@ -920,7 +949,7 @@ class DataView(object):
                 raise ValueError("Add formula failed: name [{:s}] exist. Try another name.".format(field_name))
         elif self._is_predefined_field(field_name):
             raise ValueError("[{:s}] is alread a pre-defined field. Please use another name.".format(field_name))
-        
+
         parser = Parser()
         parser.set_capital(formula_func_name_style)
 
@@ -966,10 +995,10 @@ class DataView(object):
             df_expanded = align(df_eval, df_ann, self.dates)
             self.append_df(df_expanded, field_name, is_quarterly=False)
 
-    def append_df(self, df, field_name, is_quarterly=False, overwrite=False):
+    def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
         Append DataFrame to existing multi-index DataFrame and add corresponding field name.
-        
+
         Parameters
         ----------
         df : pd.DataFrame or pd.Series
@@ -977,12 +1006,12 @@ class DataView(object):
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
         overwrite : bool, optional
-            Whether overwrite existing field. False by default.
+            Whether overwrite existing field. True by default.
         Notes
         -----
         append_df does not support overwrite. To overwrite a field, you must first do self.remove_fields(),
         then append_df() again.
-        
+
         """
         if field_name in self.fields:
             if overwrite:
@@ -1019,9 +1048,9 @@ class DataView(object):
         #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
         the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
         the_data = the_data.sort_index(axis=1)
-        #merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
-        #sort_columns(the_data)
-    
+        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+        # sort_columns(the_data)
+
         if is_quarterly:
             self.data_q = the_data
         else:
@@ -1031,13 +1060,13 @@ class DataView(object):
     def remove_field(self, field_names):
         """
         Query and append new field to DataView.
-        
+
         Parameters
         ----------
         field_names : str
             Separated by comma.
             The (custom) field to be removed from dataview.
-        
+
         Returns
         -------
         bool
@@ -1048,13 +1077,13 @@ class DataView(object):
             field_names = field_names.split(',')
         else:
             raise ValueError("field_names must be str separated by comma.")
-    
+
         for field_name in field_names:
             # parameter validation
             if field_name not in self.fields:
                 print("Field name [{:s}] does not exist. Stop remove_field.".format(field_name))
                 return
-        
+
             if self._is_daily_field(field_name):
                 is_quarterly = False
             elif self._is_quarter_field(field_name):
@@ -1062,13 +1091,13 @@ class DataView(object):
             else:
                 print("Field name [{}] is a pre-defined field, ignore.".format(field_name))
                 return
-        
+
             # remove field data
-            
+
             self.data_d = self.data_d.drop(field_name, axis=1, level=1)
             if is_quarterly:
                 self.data_q = self.data_q.drop(field_name, axis=1, level=1)
-        
+
             # remove fields name from list
             self.fields.remove(field_name)
             if is_quarterly:
@@ -1078,12 +1107,47 @@ class DataView(object):
                 if field_name in self.custom_daily_fields:
                     self.custom_daily_fields.remove(field_name)
 
+    def remove_symbol(self, symbols):
+        """
+
+        Parameters
+        ----------
+        symbols : str or list
+            The (custom) symbols to be removed from dataview.
+
+        Returns
+        -------
+        bool
+            whether remove successfully.
+
+        """
+        if isinstance(symbols, basestring):
+            symbols = symbols.split(',')
+        elif isinstance(symbols, (list, tuple)):
+            pass
+        else:
+            raise ValueError("symbols must be str or list of str.")
+
+        for symbol in symbols:
+            # parameter validation
+            if symbol not in self.symbol:
+                print("symbol [{:s}] does not exist.".format(symbol))
+                return
+
+            # remove symbol data
+            if self.data_d is not None:
+                self.data_d = self.data_d.drop(symbol, axis=1, level=0)
+            if self.data_q is not None:
+                self.data_q = self.data_q.drop(symbol, axis=1, level=0)
+
+            # remove symbol from list
+            self.symbol.remove(symbol)
     # --------------------------------------------------------------------------------------------------------
     # Get Data API
     def get(self, symbol="", start_date=0, end_date=0, fields=""):
         """
         Basic API to get arbitrary data. If nothing fetched, return None.
-        
+
         Parameters
         ----------
         symbol : str, optional
@@ -1125,7 +1189,7 @@ class DataView(object):
     def get_snapshot(self, snapshot_date, symbol="", fields=""):
         """
         Get snapshot of given fields and symbol at snapshot_date.
-        
+
         Parameters
         ----------
         snapshot_date : int
@@ -1154,13 +1218,13 @@ class DataView(object):
     def _get_ann_df(self):
         """
         Query announcement date of financial statements of all securities.
-        
+
         Returns
         -------
         df_ann : pd.DataFrame or None
             Index is date, column is symbol.
             If no quarterly data available, return None.
-        
+
         """
         if self.data_q is None:
             return None
@@ -1190,7 +1254,7 @@ class DataView(object):
     def get_ts(self, field, symbol="", start_date=0, end_date=0):
         """
         Get time series data of single field.
-        
+
         Parameters
         ----------
         field : str or unicode
@@ -1224,12 +1288,12 @@ class DataView(object):
     @staticmethod
     def _load_h5(fp):
         """Load data and meta_data from hd5 file.
-        
+
         Parameters
         ----------
         fp : str, optional
             File path of pre-stored hd5 file.
-        
+
         """
         h5 = pd.HDFStore(fp)
 
@@ -1244,18 +1308,18 @@ class DataView(object):
     def load_dataview(self, folder_path='.'):
         """
         Load data from local file.
-        
+
         Parameters
         ----------
         folder_path : str or unicode, optional
             Folder path to store hd5 file and meta data.
-            
+
         """
         path_meta_data = os.path.join(folder_path, 'meta_data.json')
         path_data = os.path.join(folder_path, 'data.hd5')
         if not (os.path.exists(path_meta_data) and os.path.exists(path_data)):
             raise IOError("There is no data file under directory {}".format(folder_path))
-        
+
         meta_data = jutil.read_json(path_meta_data)
         dic = self._load_h5(path_data)
         self.data_d = dic.get('/data_d', None)
@@ -1263,14 +1327,14 @@ class DataView(object):
         self._data_benchmark = dic.get('/data_benchmark', None)
         self._data_inst = dic.get('/data_inst', None)
         self.__dict__.update(meta_data)
-        
+
         print("Dataview loaded successfully.")
 
     def save_dataview(self, folder_path):
         """
         Save data and meta_data_to_store to a single hd5 file.
         Store at output/sub_folder
-        
+
         Parameters
         ----------
         folder_path : str or unicode
@@ -1289,16 +1353,16 @@ class DataView(object):
         print("\nStore data...")
         jutil.save_json(meta_data_to_store, meta_path)
         self._save_h5(data_path, data_to_store)
-        
-        print ("Dataview has been successfully saved to:\n"
-               + abs_folder + "\n\n"
-               + "You can load it with load_dataview('{:s}')".format(abs_folder))
+
+        print("Dataview has been successfully saved to:\n"
+              + abs_folder + "\n\n"
+              + "You can load it with load_dataview('{:s}')".format(abs_folder))
 
     @staticmethod
     def _save_h5(fp, dic):
         """
         Save data in dic to a hd5 file.
-        
+
         Parameters
         ----------
         fp : str
@@ -1308,7 +1372,7 @@ class DataView(object):
         """
         import warnings
         warnings.filterwarnings('ignore', category=pd.io.pytables.PerformanceWarning)
-        
+
         jutil.create_dir(fp)
         h5 = pd.HDFStore(fp, complevel=9, complib='blosc')
         for key, value in dic.items():
@@ -1320,7 +1384,7 @@ class EventDataView(object):
     """
     Prepare data before research / trade. Support file I/O.
     Support: add field, add formula, save / load.
-    
+
     Attributes
     ----------
     data_api : RemoteDataService
@@ -1336,8 +1400,9 @@ class EventDataView(object):
     data_q : pd.DataFrame
         All quarterly frequency data will be merged and stored here.
         index is date, columns is symbol-field MultiIndex
-    
+
     """
+
     def __init__(self):
         self.data_api = None
 
@@ -1392,7 +1457,7 @@ class EventDataView(object):
     @property
     def data_inst(self):
         """
-        
+
         Returns
         -------
         pd.DataFrame
@@ -1410,7 +1475,7 @@ class EventDataView(object):
     def dates(self):
         """
         Get daily date array of the underlying data.
-        
+
         Returns
         -------
         res : np.array
@@ -1432,7 +1497,7 @@ class EventDataView(object):
         """
         Check whether a field name is quarterly frequency.
         field_name must be pre-defined or already added.
-        
+
         Parameters
         ----------
         field_name : str
@@ -1453,7 +1518,7 @@ class EventDataView(object):
         """
         Check whether a field name is daily frequency.
         field_name must be pre-defined or already added.
-        
+
         Parameters
         ----------
         field_name : str
@@ -1473,7 +1538,7 @@ class EventDataView(object):
         """
         Check whether a field name can be recognized.
         field_name must be pre-defined or already added.
-        
+
         Parameters
         ----------
         field_name : str
@@ -1488,7 +1553,7 @@ class EventDataView(object):
     def _get_fields(self, field_type, fields, complement=False, append=False):
         """
         Get list of fields that are in ref_quarterly_fields.
-        
+
         Parameters
         ----------
         field_type : {'market_daily', 'ref_daily', 'income', 'balance_sheet', 'cash_flow', 'daily', 'quarterly'
@@ -1544,13 +1609,13 @@ class EventDataView(object):
         """
         Initialize various attributes like start/end date, universe/symbol, fields, etc.
         If your want to parse symbol, but use a custom benchmark index, please directly assign self.data_benchmark.
-        
+
         Parameters
         ----------
         props : dict
             start_date, end_date, freq, symbol, fields, etc.
         data_api : BaseDataServer
-        
+
         """
         # data_api.init_from_config(props)
         self.data_api = data_api
@@ -1666,7 +1731,7 @@ class EventDataView(object):
     def _prepare_daily_quarterly(self, fields):
         """
         Query and process data from data_api.
-        
+
         Parameters
         ----------
         fields : list
@@ -1679,7 +1744,7 @@ class EventDataView(object):
         """
         if not fields:
             return None, None
-        
+
         # query data
         print("Query data - query...")
         daily_list = self._query_data(self.symbol, fields)
@@ -1709,7 +1774,7 @@ class EventDataView(object):
         Query data using different APIs, then store them in dict.
         period, start_date and end_date are fixed.
         Keys of dict are securitites.
-        
+
         Parameters
         ----------
         symbol : list of str
@@ -1734,8 +1799,9 @@ class EventDataView(object):
                 # no adjust prices and other market daily fields
                 df_daily, msg1 = self.distributed_query('daily', symbol_str,
                                                         start_date=self.extended_start_date_d, end_date=self.end_date,
-                                                        adjust_mode=None, fields=sep.join(fields_market_daily), limit=100000)
-                #df_daily, msg1 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
+                                                        adjust_mode=None, fields=sep.join(fields_market_daily),
+                                                        limit=100000)
+                # df_daily, msg1 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
                 #                                     adjust_mode=None, fields=sep.join(fields_market_daily))
 
                 if self.all_price:
@@ -1744,9 +1810,11 @@ class EventDataView(object):
                     # df_daily_adjust, msg11 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
                     #                                             adjust_mode=self.adjust_mode, fields=','.join(adj_cols))
                     df_daily_adjust, msg1 = self.distributed_query('daily', symbol_str,
-                                                                   start_date=self.extended_start_date_d, end_date=self.end_date,
-                                                                   adjust_mode=self.adjust_mode, fields=sep.join(fields_market_daily), limit=100000)
-                    
+                                                                   start_date=self.extended_start_date_d,
+                                                                   end_date=self.end_date,
+                                                                   adjust_mode=self.adjust_mode,
+                                                                   fields=sep.join(fields_market_daily), limit=100000)
+
                     df_daily = pd.merge(df_daily, df_daily_adjust, how='outer',
                                         on=['symbol', 'trade_date'], suffixes=('', '_adj'))
                 daily_list.append(df_daily.loc[:, fields_market_daily])
@@ -1760,7 +1828,7 @@ class EventDataView(object):
     def _merge_data(dfs, index_name='trade_date'):
         """
         Merge data from different APIs into one DataFrame.
-        
+
         Parameters
         ----------
         dfs : list of pd.DataFrame
@@ -1769,11 +1837,11 @@ class EventDataView(object):
         -------
         merge : pd.DataFrame or None
             If dfs is empty, return None
-        
+
         Notes
         -----
         Align on date index, concatenate on columns (symbol and fields)
-        
+
         """
         # dfs = [df for df in dfs if df is not None]
 
@@ -1826,7 +1894,8 @@ class EventDataView(object):
         symbol_stocks = self.data_inst.loc[mask_stocks].index.values
         symbol_str = ','.join(symbol_stocks)
         df_adj = self.data_api.query_adj_factor_daily(symbol_str,
-                                                      start_date=self.extended_start_date_d, end_date=self.end_date, div=False)
+                                                      start_date=self.extended_start_date_d, end_date=self.end_date,
+                                                      div=False)
         self.append_df(df_adj, 'adjust_factor', is_quarterly=False)
 
     def _prepare_comp_info(self):
@@ -1840,7 +1909,8 @@ class EventDataView(object):
         self.append_df(df, 'index_member', is_quarterly=False)
 
         # use weights of the first universe
-        df_weights = self.data_api.query_index_weights_daily(self.universe[0], self.extended_start_date_d, self.end_date)
+        df_weights = self.data_api.query_index_weights_daily(self.universe[0], self.extended_start_date_d,
+                                                             self.end_date)
         self.append_df(df_weights, 'index_weight', is_quarterly=False)
 
     def _prepare_inst_info(self):
@@ -1890,13 +1960,13 @@ class EventDataView(object):
     def add_field(self, field_name, data_api=None):
         """
         Query and append new field to DataView.
-        
+
         Parameters
         ----------
         data_api : BaseDataServer
         field_name : str
             Must be a known field name (which is given in documents).
-        
+
         Returns
         -------
         bool
@@ -1954,12 +2024,12 @@ class EventDataView(object):
             self.append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
-    def add_formula(self, field_name, formula, is_quarterly, overwrite=False,
+    def add_formula(self, field_name, formula, is_quarterly, overwrite=True,
                     formula_func_name_style='camel', data_api=None,
                     within_index=True):
         """
         Add a new field, which is calculated using existing fields.
-        
+
         Parameters
         ----------
         formula : str
@@ -1969,12 +2039,12 @@ class EventDataView(object):
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
         overwrite : bool, optional
-            Whether overwrite existing field. False by default.
+            Whether overwrite existing field. True by default.
         formula_func_name_style : {'upper', 'lower'}, optional
         data_api : RemoteDataService, optional
         within_index : bool
             When do cross-section operatioins, whether just do within index components.
-        
+
         Notes
         -----
         Time cost of this function:
@@ -2037,10 +2107,10 @@ class EventDataView(object):
             df_expanded = align(df_eval, df_ann, self.dates)
             self.append_df(df_expanded, field_name, is_quarterly=False)
 
-    def append_df(self, df, field_name, is_quarterly=False, overwrite=False):
+    def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
         Append DataFrame to existing multi-index DataFrame and add corresponding field name.
-        
+
         Parameters
         ----------
         df : pd.DataFrame or pd.Series
@@ -2048,12 +2118,12 @@ class EventDataView(object):
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
         overwrite : bool, optional
-            Whether overwrite existing field. False by default.
+            Whether overwrite existing field. True by default.
         Notes
         -----
         append_df does not support overwrite. To overwrite a field, you must first do self.remove_fields(),
         then append_df() again.
-        
+
         """
         if field_name in self.fields:
             if overwrite:
@@ -2090,9 +2160,9 @@ class EventDataView(object):
         #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
         the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
         the_data = the_data.sort_index(axis=1)
-        #merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
-        #sort_columns(the_data)
-        
+        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+        # sort_columns(the_data)
+
         if is_quarterly:
             self.data_q = the_data
         else:
@@ -2102,19 +2172,19 @@ class EventDataView(object):
     def append_df_symbol(self, df, symbol_name):
         """
         Append DataFrame to existing multi-index DataFrame and add corresponding field name.
-        
+
         Parameters
         ----------
         df : pd.DataFrame or pd.Series
         symbol_name : str
         is_quarterly : bool
             Whether df is quarterly data (like quarterly financial statement) or daily data.
-            
+
         Notes
         -----
         append_df does not support overwrite. To overwrite a field, you must first do self.remove_fields(),
         then append_df() again.
-        
+
         """
         df = df.copy()
         if isinstance(df, pd.DataFrame):
@@ -2139,21 +2209,21 @@ class EventDataView(object):
         #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
         the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
         the_data = the_data.sort_index(axis=1)
-        #merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
-        #sort_columns(the_data)
-    
+        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+        # sort_columns(the_data)
+
         self.data_d = the_data
         self._add_symbol(symbol_name)
 
     def remove_field(self, field_names):
         """
         Query and append new field to DataView.
-        
+
         Parameters
         ----------
         field_names : str or list
             The (custom) field to be removed from dataview.
-        
+
         Returns
         -------
         bool
@@ -2196,12 +2266,49 @@ class EventDataView(object):
                 if field_name in self.custom_daily_fields:
                     self.custom_daily_fields.remove(field_name)
 
+    def remove_symbol(self, symbols):
+        """
+
+        Parameters
+        ----------
+        symbols : str or list
+            The (custom) symbols to be removed from dataview.
+
+        Returns
+        -------
+        bool
+            whether remove successfully.
+
+        """
+        if isinstance(symbols, basestring):
+            symbols = symbols.split(',')
+        elif isinstance(symbols, (list, tuple)):
+            pass
+        else:
+            raise ValueError("symbols must be str or list of str.")
+
+        for symbol in symbols:
+            # parameter validation
+            if symbol not in self.symbol:
+                print("symbol [{:s}] does not exist.".format(symbol))
+                return
+
+            # remove symbol data
+            if self.data_d is not None:
+                self.data_d = self.data_d.drop(symbol, axis=1, level=0)
+            if self.data_q is not None:
+                self.data_q = self.data_q.drop(symbol, axis=1, level=0)
+
+            # remove symbol from list
+            self.symbol.remove(symbol)
+
+
     # --------------------------------------------------------------------------------------------------------
     # Get Data API
     def get(self, symbol="", start_date=0, end_date=0, fields="", data_format='wide'):
         """
         Basic API to get arbitrary data. If nothing fetched, return None.
-        
+
         Parameters
         ----------
         symbol : str, optional
@@ -2249,7 +2356,7 @@ class EventDataView(object):
     def get_snapshot(self, snapshot_date, symbol="", fields=""):
         """
         Get snapshot of given fields and symbol at snapshot_date.
-        
+
         Parameters
         ----------
         snapshot_date : int
@@ -2278,13 +2385,13 @@ class EventDataView(object):
     def _get_ann_df(self):
         """
         Query announcement date of financial statements of all securities.
-        
+
         Returns
         -------
         df_ann : pd.DataFrame or None
             Index is date, column is symbol.
             If no quarterly data available, return None.
-        
+
         """
         if self.data_q is None:
             return None
@@ -2306,7 +2413,7 @@ class EventDataView(object):
     def get_ts(self, field, symbol="", start_date=0, end_date=0):
         """
         Get time series data of single field.
-        
+
         Parameters
         ----------
         field : str
@@ -2338,12 +2445,12 @@ class EventDataView(object):
     @staticmethod
     def _load_h5(fp):
         """Load data and meta_data from hd5 file.
-        
+
         Parameters
         ----------
         fp : str, optional
             File path of pre-stored hd5 file.
-        
+
         """
         h5 = pd.HDFStore(fp)
 
@@ -2358,12 +2465,12 @@ class EventDataView(object):
     def load_dataview(self, folder_path='.'):
         """
         Load data from local file.
-        
+
         Parameters
         ----------
         folder_path : str, optional
             Folder path to store hd5 file and meta data.
-            
+
         """
         path_meta_data = os.path.join(folder_path, 'meta_data.json')
         path_data = os.path.join(folder_path, 'data.hd5')
@@ -2385,7 +2492,7 @@ class EventDataView(object):
         """
         Save data and meta_data_to_store to a single hd5 file.
         Store at output/sub_folder
-        
+
         Parameters
         ----------
         folder_path : str
@@ -2414,7 +2521,7 @@ class EventDataView(object):
     def _save_h5(fp, dic):
         """
         Save data in dic to a hd5 file.
-        
+
         Parameters
         ----------
         fp : str
