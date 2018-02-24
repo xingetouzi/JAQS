@@ -48,9 +48,9 @@ def test_analyze_signal():
         trade_status = dv.get_ts('trade_status')
         mask_sus = trade_status == u'停牌'
         # 涨停
-        dv.add_formula('up_limit', '(close - Delay(close, 1)) / Delay(close, 1) > 0.095', is_quarterly=False)
+        dv.add_formula('up_limit', '(close - Delay(close, 1)) / Delay(close, 1) > 0.095', is_quarterly=False, add_data=True)
         # 跌停
-        dv.add_formula('down_limit', '(close - Delay(close, 1)) / Delay(close, 1) < -0.095', is_quarterly=False)
+        dv.add_formula('down_limit', '(close - Delay(close, 1)) / Delay(close, 1) < -0.095', is_quarterly=False, add_data=True)
         can_enter = np.logical_and(dv.get_ts('up_limit') < 1, ~mask_sus)  # 未涨停未停牌
         can_exit = np.logical_and(dv.get_ts('down_limit') < 1, ~mask_sus)  # 未跌停未停牌
         return can_enter, can_exit
@@ -60,7 +60,7 @@ def test_analyze_signal():
 
     # --------------------------------------------------------------------------------
     # Step.3 get signal, benchmark and price data
-    dv.add_formula('divert', '- Correlation(vwap_adj, volume, 10)', is_quarterly=False)
+    dv.add_formula('divert', '- Correlation(vwap_adj, volume, 10)', is_quarterly=False, add_data=True)
     
     signal = dv.get_ts('divert')
     price = dv.get_ts('close_adj')
@@ -95,7 +95,7 @@ def test_DIY_signal():
     dv = DataView()
     dv.load_dataview(dataview_folder)
     # 方法1：add_formula 基于dataview里已有的字段,通过表达式定义因子
-    dv.add_formula("momentum", "Return(close_adj, 20)", is_quarterly=False)
+    dv.add_formula("momentum", "Return(close_adj, 20)", is_quarterly=False, add_data=True)
     # 方法2: append_df 构造一个因子表格（pandas.Dataframe）,直接添加到dataview当中
     import pandas as pd
     import talib as ta
@@ -133,13 +133,13 @@ def test_DIY_signal():
     MA10 = sfm.ta('MA', Close=close_masked, timeperiod=10)
     dv.append_df(MA5, 'MA5')
     dv.append_df(MA10, 'MA10')
-    dv.add_formula("Cross", "(MA5>=MA10)&&(Delay(MA5<MA10, 1))", is_quarterly=False)
+    dv.add_formula("Cross", "(MA5>=MA10)&&(Delay(MA5<MA10, 1))", is_quarterly=False, add_data=True)
 
 def test_multi_factor():
     from jaqs.research.signaldigger import multi_factor,process
     dv = DataView()
     dv.load_dataview(dataview_folder)
-    dv.add_formula("momentum", "Return(close_adj, 20)", is_quarterly=False)
+    dv.add_formula("momentum", "Return(close_adj, 20)", is_quarterly=False, add_data=True)
 
     def mask_index_member():
         df_index_member = dv.get_ts('index_member')
@@ -151,9 +151,9 @@ def test_multi_factor():
         trade_status = dv.get_ts('trade_status')
         mask_sus = trade_status == u'停牌'
         # 涨停
-        dv.add_formula('up_limit', '(close - Delay(close, 1)) / Delay(close, 1) > 0.095', is_quarterly=False)
+        dv.add_formula('up_limit', '(close - Delay(close, 1)) / Delay(close, 1) > 0.095', is_quarterly=False, add_data=True)
         # 跌停
-        dv.add_formula('down_limit', '(close - Delay(close, 1)) / Delay(close, 1) < -0.095', is_quarterly=False)
+        dv.add_formula('down_limit', '(close - Delay(close, 1)) / Delay(close, 1) < -0.095', is_quarterly=False, add_data=True)
         can_enter = np.logical_and(dv.get_ts('up_limit') < 1, ~mask_sus)  # 未涨停未停牌
         can_exit = np.logical_and(dv.get_ts('down_limit') < 1, ~mask_sus)  # 未跌停未停牌
         return can_enter, can_exit
@@ -239,9 +239,9 @@ def test_optimizer():
         trade_status = dv.get_ts('trade_status')
         mask_sus = trade_status == u'停牌'
         # 涨停
-        dv.add_formula('up_limit', '(close - Delay(close, 1)) / Delay(close, 1) > 0.095', is_quarterly=False)
+        dv.add_formula('up_limit', '(close - Delay(close, 1)) / Delay(close, 1) > 0.095', is_quarterly=False, add_data=True)
         # 跌停
-        dv.add_formula('down_limit', '(close - Delay(close, 1)) / Delay(close, 1) < -0.095', is_quarterly=False)
+        dv.add_formula('down_limit', '(close - Delay(close, 1)) / Delay(close, 1) < -0.095', is_quarterly=False, add_data=True)
         can_enter = np.logical_and(dv.get_ts('up_limit') < 1, ~mask_sus)  # 未涨停未停牌
         can_exit = np.logical_and(dv.get_ts('down_limit') < 1, ~mask_sus)  # 未跌停未停牌
         return can_enter, can_exit
