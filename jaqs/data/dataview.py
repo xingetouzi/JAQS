@@ -918,7 +918,7 @@ class DataView(object):
         return True
 
     def add_formula(self, field_name, formula, is_quarterly,
-                    add_data = False,
+                    add_data=False,
                     overwrite=True,
                     formula_func_name_style='camel', data_api=None,
                     within_index=True):
@@ -1005,9 +1005,9 @@ class DataView(object):
         if is_quarterly:
             df_ann = self._get_ann_df()
             df_expanded = align(df_eval, df_ann, self.dates)
-            return df_expanded
+            return df_expanded.loc[self.start_date:self.end_date]
         else:
-            return df_eval
+            return df_eval.loc[self.start_date:self.end_date]
 
     def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
@@ -1027,6 +1027,7 @@ class DataView(object):
         then append_df() again.
 
         """
+
         def _append_df(df, field_name, is_quarterly=False):
             df = df.copy()
             if isinstance(df, pd.DataFrame):
@@ -1220,7 +1221,6 @@ class DataView(object):
 
         if self.data_q is not None:
             self.data_q.columns = self.data_q.columns.remove_unused_levels()
-
 
     # --------------------------------------------------------------------------------------------------------
     # Get Data API
@@ -2192,9 +2192,9 @@ class EventDataView(object):
         if is_quarterly:
             df_ann = self._get_ann_df()
             df_expanded = align(df_eval, df_ann, self.dates)
-            return df_expanded
+            return df_expanded.loc[self.start_date:self.end_date]
         else:
-            return df_eval
+            return df_eval.loc[self.start_date:self.end_date]
 
     def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
@@ -2409,7 +2409,6 @@ class EventDataView(object):
 
         if self.data_q is not None:
             self.data_q.columns = self.data_q.columns.remove_unused_levels()
-
 
     # --------------------------------------------------------------------------------------------------------
     # Get Data API
