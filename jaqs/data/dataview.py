@@ -1184,7 +1184,7 @@ class DataView(object):
             # parameter validation
             if symbol not in self.symbol:
                 print("symbol [{:s}] does not exist.".format(symbol))
-                return
+                continue
 
             # remove symbol data
             if self.data_d is not None:
@@ -1196,18 +1196,12 @@ class DataView(object):
             # remove symbol from list
             self.symbol.remove(symbol)
 
-        self.symbol = sorted(self.symbol)
         # change column index
         if self.data_d is not None:
-
-            new_col = pd.MultiIndex.from_product([self.symbol, self.data_d.columns.levels[1]],
-                                                  names=self.data_d.columns.names)
-            self.data_d.columns = new_col
+            self.data_d.columns = self.data_d.columns.remove_unused_levels()
 
         if self.data_q is not None:
-            new_col = pd.MultiIndex.from_product([self.symbol, self.data_q.columns.levels[1]],
-                                                  names=self.data_q.columns.names)
-            self.data_q.columns = new_col
+            self.data_q.columns = self.data_q.columns.remove_unused_levels()
 
 
     # --------------------------------------------------------------------------------------------------------
@@ -2359,7 +2353,7 @@ class EventDataView(object):
             # parameter validation
             if symbol not in self.symbol:
                 print("symbol [{:s}] does not exist.".format(symbol))
-                return
+                continue
 
             # remove symbol data
             if self.data_d is not None:
@@ -2371,17 +2365,12 @@ class EventDataView(object):
             # remove symbol from list
             self.symbol.remove(symbol)
 
-        self.symbol = sorted(self.symbol)
         # change column index
         if self.data_d is not None:
-            new_col = pd.MultiIndex.from_product([self.symbol, self.data_d.columns.levels[1]],
-                                                 names=self.data_d.columns.names)
-            self.data_d.columns = new_col
+            self.data_d.columns = self.data_d.columns.remove_unused_levels()
 
         if self.data_q is not None:
-            new_col = pd.MultiIndex.from_product([self.symbol, self.data_q.columns.levels[1]],
-                                                 names=self.data_q.columns.names)
-            self.data_q.columns = new_col
+            self.data_q.columns = self.data_q.columns.remove_unused_levels()
 
 
     # --------------------------------------------------------------------------------------------------------
