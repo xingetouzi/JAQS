@@ -844,6 +844,12 @@ class DataView(object):
             else:
                 self.custom_daily_fields.append(field_name)
 
+    def _add_symbol(self, symbol_name):
+        if symbol_name in self.symbol:
+            print("symbol [{:s}] already exists, add_symbol failed.".format(symbol_name))
+            return
+        self.symbol.append(symbol_name)
+
     def add_field(self, field_name, data_api=None):
         """
         Query and append new field to DataView.
@@ -1057,6 +1063,52 @@ class DataView(object):
             self.data_d = the_data
         self._add_field(field_name, is_quarterly)
 
+    def append_df_symbol(self, df, symbol_name):
+        """
+        Append DataFrame to existing multi-index DataFrame and add corresponding field name.
+
+        Parameters
+        ----------
+        df : pd.DataFrame or pd.Series
+        symbol_name : str
+        is_quarterly : bool
+            Whether df is quarterly data (like quarterly financial statement) or daily data.
+
+        Notes
+        -----
+        append_df does not support overwrite. To overwrite a field, you must first do self.remove_fields(),
+        then append_df() again.
+
+        """
+        df = df.copy()
+        if isinstance(df, pd.DataFrame):
+            pass
+        elif isinstance(df, pd.Series):
+            df = pd.DataFrame(df)
+        else:
+            raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
+
+        the_data = self.data_d
+
+        exist_fields = the_data.columns.levels[1]
+        if len(set(exist_fields) - set(df.columns)):
+            # if set(df.columns) < set(exist_fields):
+            df2 = pd.DataFrame(index=df.index, columns=exist_fields, data=np.nan)
+            df2.update(df)
+            df = df2
+        multi_idx = pd.MultiIndex.from_product([[symbol_name], exist_fields])
+        df.columns = multi_idx
+
+        # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
+        #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
+        the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
+        the_data = the_data.sort_index(axis=1)
+        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+        # sort_columns(the_data)
+
+        self.data_d = the_data
+        self._add_symbol(symbol_name)
+
     def remove_field(self, field_names):
         """
         Query and append new field to DataView.
@@ -1137,11 +1189,27 @@ class DataView(object):
             # remove symbol data
             if self.data_d is not None:
                 self.data_d = self.data_d.drop(symbol, axis=1, level=0)
+
             if self.data_q is not None:
                 self.data_q = self.data_q.drop(symbol, axis=1, level=0)
 
             # remove symbol from list
             self.symbol.remove(symbol)
+
+        self.symbol = sorted(self.symbol)
+        # change column index
+        if self.data_d is not None:
+
+            new_col = pd.MultiIndex.from_product([self.symbol, self.data_d.columns.levels[1]],
+                                                  names=self.data_d.columns.names)
+            self.data_d.columns = new_col
+
+        if self.data_q is not None:
+            new_col = pd.MultiIndex.from_product([self.symbol, self.data_q.columns.levels[1]],
+                                                  names=self.data_q.columns.names)
+            self.data_q.columns = new_col
+
+
     # --------------------------------------------------------------------------------------------------------
     # Get Data API
     def get(self, symbol="", start_date=0, end_date=0, fields=""):
@@ -2296,11 +2364,24 @@ class EventDataView(object):
             # remove symbol data
             if self.data_d is not None:
                 self.data_d = self.data_d.drop(symbol, axis=1, level=0)
+
             if self.data_q is not None:
                 self.data_q = self.data_q.drop(symbol, axis=1, level=0)
 
             # remove symbol from list
             self.symbol.remove(symbol)
+
+        self.symbol = sorted(self.symbol)
+        # change column index
+        if self.data_d is not None:
+            new_col = pd.MultiIndex.from_product([self.symbol, self.data_d.columns.levels[1]],
+                                                 names=self.data_d.columns.names)
+            self.data_d.columns = new_col
+
+        if self.data_q is not None:
+            new_col = pd.MultiIndex.from_product([self.symbol, self.data_q.columns.levels[1]],
+                                                 names=self.data_q.columns.names)
+            self.data_q.columns = new_col
 
 
     # --------------------------------------------------------------------------------------------------------
