@@ -995,6 +995,8 @@ class DataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
+            if df_index_member.size==0:
+                df_index_member=None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
@@ -2182,6 +2184,8 @@ class EventDataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
+            if df_index_member.size==0:
+                df_index_member=None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)

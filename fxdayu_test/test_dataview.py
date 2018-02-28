@@ -79,7 +79,7 @@ def test_add_formula_directly():
     dv.prepare_data()
     
     dv.add_formula("myfactor", 'close / open', is_quarterly=False)
-    assert dv.data_d.shape == (281, 39)
+    assert dv.data_d.shape == (281, 36)
 
 
 def test_add_formula():
@@ -89,11 +89,11 @@ def test_add_formula():
     n_securities = len(dv.data_d.columns.levels[0])
     
     formula = 'Delta(high - close, 1)'
-    dv.add_formula('myvar1', formula, is_quarterly=False)
+    dv.add_formula('myvar1', formula, is_quarterly=False, add_data=True)
     assert dv.data_d.shape == (nrows, ncols + 1 * n_securities)
     
     formula2 = 'myvar1 - close'
-    dv.add_formula('myvar2', formula2, is_quarterly=False)
+    dv.add_formula('myvar2', formula2, is_quarterly=False, add_data=True)
     assert dv.data_d.shape == (nrows, ncols + 2 * n_securities)
 
 
