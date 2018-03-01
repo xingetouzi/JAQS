@@ -776,9 +776,31 @@ class DataView(object):
                                                       div=False)
         self.append_df(df_adj, 'adjust_factor', is_quarterly=False)
 
-    def add_comp(self,universe):
+    def add_comp_info(self, index, data_api=None):
+        """
+        Query and append index components info.
+
+        Parameters
+        ----------
+        data_api : BaseDataServer
+        index : str
+            Index code separated by ','.
+
+        Returns
+        -------
+        bool
+            whether add successfully.
+
+        """
+        if data_api is None:
+            if self.data_api is None:
+                print("Add field failed. No data_api available. Please specify one in parameter.")
+                return False
+        else:
+            self.data_api = data_api
+
         # if a symbol is index member of any one universe, its value of index_member will be 1.0
-        universe = universe.split(',')
+        universe = index.split(',')
         
         exist_symbols = self.data_d.columns.levels[0]
         exist_fields = self.data_d.columns.levels[1]
@@ -2005,6 +2027,54 @@ class EventDataView(object):
                                                       start_date=self.extended_start_date_d, end_date=self.end_date,
                                                       div=False)
         self.append_df(df_adj, 'adjust_factor', is_quarterly=False)
+
+    def add_comp_info(self, index, data_api=None):
+        """
+        Query and append index components info.
+
+        Parameters
+        ----------
+        data_api : BaseDataServer
+        index : str
+            Index code separated by ','.
+
+        Returns
+        -------
+        bool
+            whether add successfully.
+
+        """
+        if data_api is None:
+            if self.data_api is None:
+                print("Add field failed. No data_api available. Please specify one in parameter.")
+                return False
+        else:
+            self.data_api = data_api
+
+        # if a symbol is index member of any one universe, its value of index_member will be 1.0
+        universe = index.split(',')
+
+        exist_symbols = self.data_d.columns.levels[0]
+        exist_fields = self.data_d.columns.levels[1]
+
+        for univ in universe:
+            if univ + '_member' not in exist_fields:
+                df = self.data_api.query_index_member_daily(univ, self.extended_start_date_d, self.end_date)
+
+                if len(set(exist_symbols) - set(df.columns)) > 0:
+                    symbols = list(set(exist_symbols) & set(df.columns))
+                    df = df.loc[:, symbols]
+
+                self.append_df(df, univ + '_member', is_quarterly=False)
+
+                # use weights of the first universe
+                df_weights = self.data_api.query_index_weights_daily(univ, self.extended_start_date_d, self.end_date)
+
+                if len(set(exist_symbols) - set(df_weights.columns)) > 0:
+                    symbols = list(set(exist_symbols) & set(df_weights.columns))
+                    df_weights = df_weights.loc[:, symbols]
+
+                self.append_df(df_weights, univ + '_weight', is_quarterly=False)
 
     def _prepare_comp_info(self):
         # if a symbol is index member of any one universe, its value of index_member will be 1.0
