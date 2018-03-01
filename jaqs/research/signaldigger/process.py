@@ -5,8 +5,6 @@ import jaqs.util as jutil
 import pandas as pd
 import numpy as np
 from sklearn import linear_model
-from jaqs.data import DataView
-from jaqs.data import RemoteDataService
 
 
 def _mask_df(df, mask):
