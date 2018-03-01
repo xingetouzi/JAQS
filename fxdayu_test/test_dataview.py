@@ -161,11 +161,7 @@ def test_q_add_field():
     
     ds = RemoteDataService()
     ds.init_from_config(data_config)
-    dv.add_field('net_inc_other_ops', ds)
-    """
-    dv.add_field('oper_rev', ds)
-    dv.add_field('turnover', ds)
-    """
+    dv.add_field("debttoassets", ds)
     assert dv.data_q.shape == (nrows, ncols + 1 * n_securities)
 
 
@@ -177,12 +173,12 @@ def test_q_add_formula():
     n_securities = len(dv.data_d.columns.levels[0])
     
     formula = 'total_oper_rev / close'
-    dv.add_formula('myvar1', formula, is_quarterly=False)
+    dv.add_formula('myvar1', formula, is_quarterly=False, add_data=True)
     df1 = dv.get_ts('myvar1')
     assert not df1.empty
     
     formula2 = 'Delta(oper_exp * myvar1 - open, 3)'
-    dv.add_formula('myvar2', formula2, is_quarterly=False)
+    dv.add_formula('myvar2', formula2, is_quarterly=False, add_data=True)
     df2 = dv.get_ts('myvar2')
     assert not df2.empty
 

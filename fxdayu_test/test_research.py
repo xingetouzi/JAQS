@@ -19,14 +19,14 @@ def test_save_dataview():
     ds = RemoteDataService()
     ds.init_from_config(data_config)
     dv = DataView()
-    
-    props = {'start_date': 20170301, 'end_date': 20171001, 'universe': '000300.SH',
-             'fields': 'volume,turnover,float_mv,pb,pe,ps,total_mv,sw1',
+
+    props = {'start_date': 20170501, 'end_date': 20171001, 'universe': '000016.SH',
+             'fields': 'volume,pb,pe,ps,float_mv,sw1',
              'freq': 1}
-    
+
     dv.init_from_config(props, ds)
     dv.prepare_data()
-    
+
     dv.save_dataview(dataview_folder)
 
 
@@ -61,7 +61,7 @@ def test_analyze_signal():
     # --------------------------------------------------------------------------------
     # Step.3 get signal, benchmark and price data
     dv.add_formula('divert', '- Correlation(vwap_adj, volume, 10)', is_quarterly=False, add_data=True)
-    
+
     signal = dv.get_ts('divert')
     price = dv.get_ts('close_adj')
     price_bench = dv.data_benchmark
@@ -162,8 +162,8 @@ def test_multi_factor():
     can_enter, can_exit = limit_up_down()
 
     ic = dict()
-    factors_dict = {signal: dv.get_ts(signal) for signal in ["pb", "pe", "ps", "float_mv", "momentum"]}
-    for period in [5, 15, 30]:
+    factors_dict = {signal: dv.get_ts(signal) for signal in ["pb", "pe", "ps", "momentum"]}
+    for period in [5, 15]:
         ic[period] = multi_factor.get_factors_ic_df(factors_dict,
                                                     price=dv.get_ts("close_adj"),
                                                     high=dv.get_ts("high_adj"),  # 可为空
@@ -185,11 +185,10 @@ def test_multi_factor():
         signal = process.standardize(signal, index_member)  # z-score标准化 保留排序信息和分布信息
         #行业市值中性化
         signal = process.neutralize(signal,
-                                    factorIsMV=False,#是否是市值类因子
-                                    group_field="sw1",#行业分类类型　"sw1", "sw2", "sw3", "sw4", "zz1", "zz2"
+                                    group=dv.get_ts("sw1"),
+                                    float_mv = dv.get_ts("float_mv"),
                                     index_member=index_member,# 是否只处理时只考虑指数成份股
-                                    dv=dv,#dataview
-                                    ds=None) #data_api
+                                    )
         factor_dict[name] = signal
 
     # 因子间存在较强同质性时，使用施密特正交化方法对因子做正交化处理，用得到的正交化残差作为因子
@@ -255,7 +254,7 @@ def test_optimizer():
     price_bench = dv.data_benchmark
     optimizer = Optimizer(dataview=dv,
                           formula='- Correlation(vwap_adj, volume, LEN)',
-                          params={"LEN": range(2, 15, 1)},
+                          params={"LEN": range(2, 4, 1)},
                           name='divert',
                           price=price,
                           high=high,

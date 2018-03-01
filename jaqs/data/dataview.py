@@ -955,14 +955,14 @@ class DataView(object):
 
         merge = merge.loc[:, pd.IndexSlice[:, field_name]]
         merge.columns = merge.columns.droplevel(level=1)
-        self.append_df(merge, field_name,
-                       is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
+        self._append_df(merge, field_name,
+                        is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
 
         if is_quarterly:
             df_ann = merge_q.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
             df_ann.columns = df_ann.columns.droplevel(level='field')
             df_expanded = align(merge, df_ann, self.dates)
-            self.append_df(df_expanded, field_name, is_quarterly=False)
+            self._append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
     def add_formula(self, field_name, formula, is_quarterly,
@@ -1043,8 +1043,6 @@ class DataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
-            if df_index_member.size==0:
-                df_index_member=None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
@@ -1058,6 +1056,43 @@ class DataView(object):
             return df_expanded.loc[self.start_date:self.end_date]
         else:
             return df_eval.loc[self.start_date:self.end_date]
+
+    def _append_df(self, df, field_name, is_quarterly=False):
+        df = df.copy()
+        if isinstance(df, pd.DataFrame):
+            pass
+        elif isinstance(df, pd.Series):
+            df = pd.DataFrame(df)
+        else:
+            raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
+
+        if is_quarterly:
+            the_data = self.data_q
+        else:
+            the_data = self.data_d
+
+        exist_symbols = the_data.columns.levels[0]
+        if len(df.columns) < len(exist_symbols):
+            df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
+            df2.update(df)
+            df = df2
+        elif len(df.columns) > len(exist_symbols):
+            df = df.loc[:, exist_symbols]
+        multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
+        df.columns = multi_idx
+
+        # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
+        #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
+
+        the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
+        the_data = the_data.sort_index(axis=1)
+        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+        # sort_columns(the_data)
+        if is_quarterly:
+            self.data_q = the_data
+        else:
+            self.data_d = the_data
+        self._add_field(field_name, is_quarterly)
 
     def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
@@ -1077,44 +1112,6 @@ class DataView(object):
         then append_df() again.
 
         """
-
-        def _append_df(df, field_name, is_quarterly=False):
-            df = df.copy()
-            if isinstance(df, pd.DataFrame):
-                pass
-            elif isinstance(df, pd.Series):
-                df = pd.DataFrame(df)
-            else:
-                raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
-
-            if is_quarterly:
-                the_data = self.data_q
-            else:
-                the_data = self.data_d
-
-            exist_symbols = the_data.columns.levels[0]
-            if len(df.columns) < len(exist_symbols):
-                df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
-                df2.update(df)
-                df = df2
-            elif len(df.columns) > len(exist_symbols):
-                df = df.loc[:, exist_symbols]
-            multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
-            df.columns = multi_idx
-
-            # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
-            #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
-            the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
-            the_data = the_data.sort_index(axis=1)
-            # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
-            # sort_columns(the_data)
-
-            if is_quarterly:
-                self.data_q = the_data
-            else:
-                self.data_d = the_data
-            self._add_field(field_name, is_quarterly)
-
         if field_name in self.fields:
             if overwrite:
                 self.remove_field(field_name)
@@ -1124,13 +1121,13 @@ class DataView(object):
                 return
 
         # 季度添加至data_q　日度添加至data_d
-        _append_df(df, field_name, is_quarterly=is_quarterly)
+        self._append_df(df, field_name, is_quarterly=is_quarterly)
 
         # 季度添加至data_d
         if is_quarterly:
             df_ann = self._get_ann_df()
             df_expanded = align(df, df_ann, self.dates)
-            _append_df(df_expanded, field_name, is_quarterly=False)
+            self._append_df(df_expanded, field_name, is_quarterly=False)
 
     def append_df_symbol(self, df, symbol_name):
         """
@@ -2192,14 +2189,14 @@ class EventDataView(object):
 
         merge = merge.loc[:, pd.IndexSlice[:, field_name]]
         merge.columns = merge.columns.droplevel(level=1)
-        self.append_df(merge, field_name,
-                       is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
+        self._append_df(merge, field_name,
+                        is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
 
         if is_quarterly:
             df_ann = merge_q.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
             df_ann.columns = df_ann.columns.droplevel(level='field')
             df_expanded = align(merge, df_ann, self.dates)
-            self.append_df(df_expanded, field_name, is_quarterly=False)
+            self._append_df(df_expanded, field_name, is_quarterly=False)
         return True
 
     def add_formula(self, field_name, formula, is_quarterly,
@@ -2280,8 +2277,6 @@ class EventDataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
-            if df_index_member.size==0:
-                df_index_member=None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
@@ -2295,6 +2290,43 @@ class EventDataView(object):
             return df_expanded.loc[self.start_date:self.end_date]
         else:
             return df_eval.loc[self.start_date:self.end_date]
+
+    def _append_df(self, df, field_name, is_quarterly=False):
+        df = df.copy()
+        if isinstance(df, pd.DataFrame):
+            pass
+        elif isinstance(df, pd.Series):
+            df = pd.DataFrame(df)
+        else:
+            raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
+
+        if is_quarterly:
+            the_data = self.data_q
+        else:
+            the_data = self.data_d
+
+        exist_symbols = the_data.columns.levels[0]
+        if len(df.columns) < len(exist_symbols):
+            df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
+            df2.update(df)
+            df = df2
+        elif len(df.columns) > len(exist_symbols):
+            df = df.loc[:, exist_symbols]
+        multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
+        df.columns = multi_idx
+
+        # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
+        #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
+
+        the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
+        the_data = the_data.sort_index(axis=1)
+        # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
+        # sort_columns(the_data)
+        if is_quarterly:
+            self.data_q = the_data
+        else:
+            self.data_d = the_data
+        self._add_field(field_name, is_quarterly)
 
     def append_df(self, df, field_name, is_quarterly=False, overwrite=True):
         """
@@ -2314,44 +2346,6 @@ class EventDataView(object):
         then append_df() again.
 
         """
-
-        def _append_df(df, field_name, is_quarterly=False):
-            df = df.copy()
-            if isinstance(df, pd.DataFrame):
-                pass
-            elif isinstance(df, pd.Series):
-                df = pd.DataFrame(df)
-            else:
-                raise ValueError("Data to be appended must be pandas format. But we have {}".format(type(df)))
-
-            if is_quarterly:
-                the_data = self.data_q
-            else:
-                the_data = self.data_d
-
-            exist_symbols = the_data.columns.levels[0]
-            if len(df.columns) < len(exist_symbols):
-                df2 = pd.DataFrame(index=df.index, columns=exist_symbols, data=np.nan)
-                df2.update(df)
-                df = df2
-            elif len(df.columns) > len(exist_symbols):
-                df = df.loc[:, exist_symbols]
-            multi_idx = pd.MultiIndex.from_product([exist_symbols, [field_name]])
-            df.columns = multi_idx
-
-            # the_data = apply_in_subprocess(pd.merge, args=(the_data, df),
-            #                            kwargs={'left_index': True, 'right_index': True, 'how': 'left'})  # runs in *only* one process
-            the_data = pd.merge(the_data, df, left_index=True, right_index=True, how='left')
-            the_data = the_data.sort_index(axis=1)
-            # merge = the_data.join(df, how='left')  # left: keep index of existing data unchanged
-            # sort_columns(the_data)
-
-            if is_quarterly:
-                self.data_q = the_data
-            else:
-                self.data_d = the_data
-            self._add_field(field_name, is_quarterly)
-
         if field_name in self.fields:
             if overwrite:
                 self.remove_field(field_name)
@@ -2361,13 +2355,13 @@ class EventDataView(object):
                 return
 
         # 季度添加至data_q　日度添加至data_d
-        _append_df(df, field_name, is_quarterly=is_quarterly)
+        self._append_df(df, field_name, is_quarterly=is_quarterly)
 
         # 季度添加至data_d
         if is_quarterly:
             df_ann = self._get_ann_df()
             df_expanded = align(df, df_ann, self.dates)
-            _append_df(df_expanded, field_name, is_quarterly=False)
+            self._append_df(df_expanded, field_name, is_quarterly=False)
 
     def append_df_symbol(self, df, symbol_name):
         """

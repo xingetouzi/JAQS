@@ -159,9 +159,9 @@ def get_factors_ic_df(factors_dict,
             raise ValueError("signal_data中不包含%s收益,无法进行ic计算!" % (ret_type,))
 
     if group is None:
-        ic_df = pd.concat(ic_table, axis=1).dropna().reindex(times)
+        ic_df = pd.concat(ic_table, axis=1).dropna(how="all").reindex(times)
     else:
-        ic_df = pd.concat(ic_table, axis=1).dropna()
+        ic_df = pd.concat(ic_table, axis=1).dropna(how="all")
         ic_df = ic_df.reindex(pd.MultiIndex.from_product([times,ic_df.index.levels[1]],
                                                          names=["trade_date","group"]))
     return ic_df
@@ -350,8 +350,6 @@ def combine_factors(factors_dict=None,
     :param winsorization: 是否去极值
     :param props:　当weighted_method不为equal_weight时　需传入此配置　配置内容包括
      props = {
-            'dataview': None,
-            "data_api": None,
             'price': None,
             'high': None,
             'low': None,
@@ -376,8 +374,6 @@ def combine_factors(factors_dict=None,
 
     def generate_props():
         props = {
-            'dataview': None,
-            "data_api": None,
             'price': None,
             'high': None,
             'low': None,
@@ -418,24 +414,13 @@ def combine_factors(factors_dict=None,
         _props = generate_props()
         if not (props is None):
             _props.update(props)
-        if _props["price"] is None or \
-                (_props['ret_type'] in ["upside_ret", "downside_ret"] and (
-                        _props['high'] is None or _props['low'] is None)):
-            factors_name = list(factors_dict.keys())
-            factor_0 = factors_dict[factors_name[0]]
-            pools = list(factor_0.columns)
-            start = factor_0.index[0]
-            end = factor_0.index[-1]
-            dv = process._prepare_data(pools, start, end,
-                                       dv=_props["dataview"],
-                                       ds=_props["data_api"])
         if _props["price"] is None:
-            _props["price"] = dv.get_ts("close_adj")
+            raise ValueError("您需要在配置props中提供price")
         if _props['ret_type'] in ["upside_ret", "downside_ret"]:
             if _props['high'] is None:
-                _props['high'] = dv.get_ts("high_adj")
+                raise ValueError("您需要在配置props中提供high")
             if _props['low'] is None:
-                _props['low'] = dv.get_ts("low_adj")
+                raise ValueError("您需要在配置props中提供low")
 
         # 此处计算的ic,用到的因子值是shift(1)后的
         # t日ic计算逻辑:t-1的因子数据，t日决策买入，t+n天后卖出对应的ic
