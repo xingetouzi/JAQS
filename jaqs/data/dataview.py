@@ -17,6 +17,7 @@ import pandas as pd
 import jaqs.util as jutil
 from jaqs.data.align import align
 from jaqs.data.py_expression_eval import Parser
+from .search_doc import Search_funcs_doc
 
 
 class DataView(object):
@@ -969,6 +970,7 @@ class DataView(object):
                     add_data=False,
                     overwrite=True,
                     formula_func_name_style='camel', data_api=None,
+                    register_funcs = None,
                     within_index=True):
         """
         Add a new field, which is calculated using existing fields.
@@ -987,6 +989,8 @@ class DataView(object):
             Whether overwrite existing field. True by default.
         formula_func_name_style : {'upper', 'lower'}, optional
         data_api : RemoteDataService, optional
+        register_funcs :Dict of functions you definite by yourself like {"name1":func1},
+                        optional
         within_index : bool
             When do cross-section operatioins, whether just do within index components.
 
@@ -1011,6 +1015,14 @@ class DataView(object):
 
         parser = Parser()
         parser.set_capital(formula_func_name_style)
+
+        # 注册自定义函数
+        if register_funcs is not None:
+            for func in register_funcs.keys():
+                if func in parser.ops1 or func in parser.ops2 or func in parser.functions or \
+                                func in parser.consts or func in parser.values:
+                    raise ValueError("注册的自定义函数名%s与内置的函数名称重复,请更换register_funcs中定义的相关函数名称."%(func,))
+                parser.functions[func] = register_funcs[func]
 
         expr = parser.parse(formula)
 
@@ -1043,6 +1055,8 @@ class DataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
+            if df_index_member.size==0:
+                df_index_member=None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
@@ -1056,6 +1070,10 @@ class DataView(object):
             return df_expanded.loc[self.start_date:self.end_date]
         else:
             return df_eval.loc[self.start_date:self.end_date]
+
+    def func_doc(self):
+        search = Search_funcs_doc()
+        return search
 
     def _append_df(self, df, field_name, is_quarterly=False):
         df = df.copy()
@@ -2203,6 +2221,7 @@ class EventDataView(object):
                     add_data=False,
                     overwrite=True,
                     formula_func_name_style='camel', data_api=None,
+                    register_funcs = None,
                     within_index=True):
         """
         Add a new field, which is calculated using existing fields.
@@ -2221,6 +2240,8 @@ class EventDataView(object):
             Whether overwrite existing field. True by default.
         formula_func_name_style : {'upper', 'lower'}, optional
         data_api : RemoteDataService, optional
+        register_funcs :Dict of functions you definite by yourself like {"name1":func1},
+                        optional
         within_index : bool
             When do cross-section operatioins, whether just do within index components.
 
@@ -2245,6 +2266,14 @@ class EventDataView(object):
 
         parser = Parser()
         parser.set_capital(formula_func_name_style)
+
+        # 注册自定义函数
+        if register_funcs is not None:
+            for func in register_funcs.keys():
+                if func in parser.ops1 or func in parser.ops2 or func in parser.functions or \
+                                func in parser.consts or func in parser.values:
+                    raise ValueError("注册的自定义函数名%s与内置的函数名称重复,请更换register_funcs中定义的相关函数名称."%(func,))
+                parser.functions[func] = register_funcs[func]
 
         expr = parser.parse(formula)
 
@@ -2277,6 +2306,8 @@ class EventDataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
+            if df_index_member.size==0:
+                df_index_member=None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
@@ -2290,6 +2321,10 @@ class EventDataView(object):
             return df_expanded.loc[self.start_date:self.end_date]
         else:
             return df_eval.loc[self.start_date:self.end_date]
+
+    def func_doc(self):
+        search = Search_funcs_doc()
+        return search
 
     def _append_df(self, df, field_name, is_quarterly=False):
         df = df.copy()

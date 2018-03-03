@@ -38,7 +38,6 @@ TOP2 = 2
 TVAR = 3
 TFUNCALL = 4
 
-
 '''
 single quarter / TTM + year on year / month on month
 '''
@@ -55,6 +54,7 @@ def cum_to_single_quarter(df, report_date):
         df_ = df_.diff(1, axis=0)
         df_.iloc[0, :] = first_row
         return df_
+
     single_quarter = df.groupby(by=year).apply(cum_to_single_within_year)
     single_quarter[is_nan] = np.nan
     return single_quarter
@@ -223,7 +223,7 @@ class Expression(object):
             item = self.tokens[i]
             if item.type_ == TVAR and \
                     not item.index_ in vars and \
-                    item.index_ not in self.functions:
+                            item.index_ not in self.functions:
                 vars.append(item.index_)
         return vars
 
@@ -343,8 +343,8 @@ class Parser(object):
             'Ts_Quantile': self.ts_quantile,
             'Ewma': self.ewma,
             'Sma': self.sma,
-            'Sum': self.sum,
-            'Product': self.product,  # rolling product
+            'Ts_Sum': self.ts_sum,
+            'Ts_Product': self.ts_product,  # rolling product
             'CountNans': self.count_nans,  # rolling count Nans
             'StdDev': self.std_dev,
             'Covariance': self.cov,
@@ -429,12 +429,12 @@ class Parser(object):
                       *args,
                       **kwargs)
 
-    def ts_argmax(self,*args,
-           **kwargs):
+    def ts_argmax(self, *args,
+                  **kwargs):
         return sfm.ts_argmax(*args, **kwargs)
 
-    def ts_argmin(self,*args,
-           **kwargs):
+    def ts_argmin(self, *args,
+                  **kwargs):
         return sfm.ts_argmin(*args, **kwargs)
 
     def add(self, a, b):
@@ -617,7 +617,7 @@ class Parser(object):
     def std_dev(self, x, n):
         return pd.rolling_std(x, n)
 
-    def sum(self, x, n):
+    def ts_sum(self, x, n):
         return pd.rolling_sum(x, n)
 
     def count_nans(self, x, n):
@@ -653,7 +653,7 @@ class Parser(object):
     def ts_skew(self, x, n):
         return pd.rolling_skew(x, n)
 
-    def product(self, x, n):
+    def ts_product(self, x, n):
         return pd.rolling_apply(x, n, np.product)
 
     @staticmethod
@@ -810,7 +810,7 @@ class Parser(object):
             else:
                 res = res.fillna(rank)
         return res
-    
+
     def group_percentile(self, df, group, mask=None):
         df = self._align_univariate(df)
         df = self._mask_non_index_member(df)
@@ -833,12 +833,12 @@ class Parser(object):
         func = lambda arr: numeric.quantilize_without_nan(arr, n_quantiles=n_quantiles, axis=0)[-1]
         res = roll.apply(func)
         return res
-    
+
     def to_quantile(self, df, n_quantiles=5, axis=1, mask=None):
         """
         Convert cross-section values to the quantile number they belong.
         Small values get small quantile numbers.
-        
+
         Parameters
         ----------
         df : DataFrame
@@ -870,7 +870,6 @@ class Parser(object):
         df = self._mask_non_index_member(df)
         df = self._mask_df(df, mask)
 
-
         res = None
         groups = np.unique(pd.Series(group.values.flatten()).dropna())
         for val in groups:
@@ -886,7 +885,7 @@ class Parser(object):
         """
         Group on cross section (axis=1). Rank, Mean, Std, Max, Min, Standardize, cutoff.
         Single parameter.
-        
+
         Parameters
         ----------
         func : callable
@@ -901,7 +900,7 @@ class Parser(object):
 
         """
         df_group = self.df_group
-        
+
         def gp_apply(df_value, df_group_):
             """df has date index and symbol columns."""
             gp = df_value.groupby(by=df_group_, axis=1)
@@ -910,7 +909,7 @@ class Parser(object):
 
         # align for quarterly data
         df_arg = self._align_univariate(df_arg)
-        
+
         # validity check
         if isinstance(df_group, pd.DataFrame):
             if df_group.shape[0] == 1 or df_group.shape[1] == 1:
@@ -922,7 +921,7 @@ class Parser(object):
             return gp_apply(df_arg, df_group)
         else:
             raise NotImplementedError("type of df_group{}".format(type(df_group)))
-    
+
         # for time-variant industry classification, we have to loop
         res_list = []
         for idx in df_arg.index:
@@ -930,7 +929,7 @@ class Parser(object):
             row_group = df_group.loc[idx, :]  # must be Series, because groupby only support series
             tmp = gp_apply(row, row_group)
             res_list.append(tmp)
-            
+
         res = pd.concat(res_list, axis=0)
         return res
 
@@ -949,7 +948,7 @@ class Parser(object):
     def cutoff(self, df, z_score=3.0):
         """
         Cut off extreme values using Median Absolute Deviation
-        
+
         Parameters
         ----------
         df : pd.DataFrame
@@ -1009,17 +1008,17 @@ class Parser(object):
     def set_capital(self, style='camel'):
         """
         Set capital style of function names.
-        
+
         Parameters
         ----------
         style : {'upper', 'lower'}
             upper for 'Rank', lower for 'rank'
-        
+
         """
 
         def set_dic_key_capital(dic, style='camel'):
             """
-            
+
             Parameters
             ----------
             dic : dict
@@ -1047,12 +1046,12 @@ class Parser(object):
 
     def register_function(self, name, func):
         """Register a new function to function map.
-        
+
         Parameters
         ----------
         name : str
         func : callable
-        
+
         """
         if name in self.functions:
             print("Register function failed: name [{:s}] already exist. Try another name.".format(name))
@@ -1065,7 +1064,7 @@ class Parser(object):
     def parse(self, expr):
         """
         Parse a string expression.
-        
+
         Parameters
         ----------
         expr : str
@@ -1197,7 +1196,7 @@ class Parser(object):
     def evaluate(self, values, ann_dts=None, trade_dts=None, index_member=None):
         """
         Evaluate the value of expression using. Data of different frequency will be automatically expanded.
-        
+
         Parameters
         ----------
         values : dict
