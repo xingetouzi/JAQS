@@ -193,7 +193,7 @@ def get_rets(signal_data, is_event):
         period_wise_quantile_ret_stats = pfm.calc_quantile_return_mean_std(signal_data, time_series=True)
         rets['tmb_ret'] = pfm.calc_return_diff_mean_std(period_wise_quantile_ret_stats[n_quantiles],
                                                         period_wise_quantile_ret_stats[1])['mean_diff'].dropna()
-
+    rets['all_sample_ret'] = signal_data["return"].dropna()
     return rets
 
 
@@ -357,6 +357,9 @@ def get_spaces(signal_data, is_event):
                                                                               tb_upside_mean_space[1])[
             'mean_diff'].dropna()
 
+    spaces["all_sample_space"] = dict()
+    spaces["all_sample_space"]["upside_space"] = signal_data["upside_ret"].dropna()
+    spaces["all_sample_space"]["downside_space"] = signal_data["downside_ret"].dropna()
     return spaces
 
 

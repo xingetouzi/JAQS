@@ -19,14 +19,16 @@ target_types = {
             "long_short_ret",
             'top_quantile_ret',
             'bottom_quantile_ret',
-            "tmb_ret"],
+            "tmb_ret",
+            "all_sample_ret"],
         "space": [
             'long_space',
             'short_space',
             'long_short_space',
             "top_quantile_space",
             "bottom_quantile_space",
-            "tmb_space"
+            "tmb_space",
+            "all_sample_space"
         ]
     },
     "event": {
