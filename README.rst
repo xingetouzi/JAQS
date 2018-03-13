@@ -24,6 +24,21 @@ Installation
 ============
 
 参见 \ `安装指南 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
+＊＊特别注意＊＊
+1. jaqs-大鱼金融fork版　在官方项目的基础上做了大量细节的优化和功能改动.在根据上述安装指南安装好官方jaqs相关版本依赖后,可以通过以下命令安装
+ | pip install git+https://github.com/xingetouzi/JAQS.git@fxdayu
+2. 如果事先已安装过官方版本的jaqs,需要pip uninstall jaqs卸载官方版本,再执行1中的命令安装大鱼金融fork版
+3. 目前jaqs-大鱼金融fork版不支持直接pip更新,请随时关注fork版项目的更新进度,通过卸载旧版本并重新安装更新
+
+jaqs-大鱼金融fork版文档
+=====================
+
+参见 \ `安装指南 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
+
+
+==========
+以下内容为jaqs官方版本提供的支持或文档,不由大鱼金融团队维护,提供链接供参考
+==========
 
 Quickstart
 ==========
