@@ -24,50 +24,34 @@ Installation
 ============
 
 参见 \ `安装指南 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
-＊＊特别注意＊＊
+
+**特别注意**
+
 1. jaqs-大鱼金融fork版　在官方项目的基础上做了大量细节的优化和功能改动.在根据上述安装指南安装好官方jaqs相关版本依赖后,可以通过以下命令安装
  | pip install git+https://github.com/xingetouzi/JAQS.git@fxdayu
 2. 如果事先已安装过官方版本的jaqs,需要pip uninstall jaqs卸载官方版本,再执行1中的命令安装大鱼金融fork版
 3. 目前jaqs-大鱼金融fork版不支持直接pip更新,请随时关注fork版项目的更新进度,通过卸载旧版本并重新安装更新
 
-jaqs-大鱼金融fork版文档
-=====================
+Document
+========
 
-参见 \ `安装指南 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
+参见 \ `文档 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
 
 
-==========
-以下内容为jaqs官方版本提供的支持或文档,不由大鱼金融团队维护,提供链接供参考
-==========
 
-Quickstart
-==========
-
-参见 \ `用户手册 <http://www.quantos.org/jaqs/doc.html>`__\.
-
-更多示例可在项目的 ``example`` 文件夹下找到，如 ``example/alpha/select_stocks_pe_profit.py`` .
-
-查看完整文档，请访问： \ `jaqs.readthedocs.io <http://jaqs.readthedocs.io>`__\ 
-
-Contribute
-===========
-
-欢迎参与开发！可以通过Pull Request的方式提交代码。
 
 
 Questions
 ==========
-
-- 如果您发现BUG，请到\ `这里 <https://github.com/quantOS-org/JAQS/issues/new>`__\提交。
-- 如果有问题、建议，也可以到 \ `社区 <https://www.quantos.org/community>`__\ 参与讨论。
-
-提问前，请查看 \ `如何正确提问 <https://github.com/quantOS-org/JAQS/blob/master/doc/how_to_ask_questions.md>`__\ 。
+- 查看jaqs官方项目,请到\ `这里 <https://github.com/quantOS-org/JAQS>`__\。
+- 访问大鱼金融官网获得更多使用案例和金融量化知识(\ `大鱼金融官网 <http://www.fxdayu.com>`__\)。
+- 加qq群(372592121)进行讨论
 
 
 License
 =======
 
-Apache 2.0许可协议。版权所有(c)2017 quantOS-org.
+Apache 2.0许可协议。
 
 
 
