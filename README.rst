@@ -32,13 +32,15 @@ Installation
 2. 如果事先已安装过官方版本的jaqs,需要pip uninstall jaqs卸载官方版本,再执行1中的命令安装大鱼金融fork版
 3. 目前jaqs-大鱼金融fork版不支持直接pip更新,请随时关注fork版项目的更新进度,通过卸载旧版本并重新安装更新
 
+What's new
+==========
+
+参见 \ `文档 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
+
 Document
 ========
 
 参见 \ `文档 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
-
-
-
 
 
 Questions

@@ -535,6 +535,13 @@ class DataView(object):
             print("Query groups (industry)...")
             self._prepare_group(group_fields)
 
+        self.fields = []
+        if (self.data_d is not None) and self.data_d.size !=0:
+            self.fields += list(self.data_d.columns.levels[1])
+        if (self.data_q is not None) and self.data_q.size != 0:
+            self.fields += list(self.data_q.columns.levels[1])
+        self.fields = list(set(self.fields))
+
         print("Data has been successfully prepared.")
 
     @staticmethod
