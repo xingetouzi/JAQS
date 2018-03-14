@@ -1154,7 +1154,7 @@ class DataView(object):
             df_expanded = align(df, df_ann, self.dates)
             self._append_df(df_expanded, field_name, is_quarterly=False)
 
-    def append_df_symbol(self, df, symbol_name):
+    def append_df_symbol(self, df, symbol_name, overwrite=False):
         """
         Append DataFrame to existing multi-index DataFrame and add corresponding field name.
 
@@ -1162,15 +1162,22 @@ class DataView(object):
         ----------
         df : pd.DataFrame or pd.Series
         symbol_name : str
-        is_quarterly : bool
-            Whether df is quarterly data (like quarterly financial statement) or daily data.
-
+        overwrite : bool, optional
+            Whether overwrite existing field. True by default.
         Notes
         -----
         append_df does not support overwrite. To overwrite a field, you must first do self.remove_fields(),
         then append_df() again.
 
         """
+        if symbol_name in self.symbol:
+            if overwrite:
+                self.remove_symbol(symbol_name)
+                print("Symbol [{:s}] is overwritten.".format(symbol_name))
+            else:
+                print("Append symbol failed: symbol [{:s}] exist. ".format(symbol_name))
+                return
+
         df = df.copy()
         if isinstance(df, pd.DataFrame):
             pass
