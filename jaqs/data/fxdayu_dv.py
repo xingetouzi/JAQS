@@ -113,7 +113,7 @@ class FxdayuDataView(DataView):
             fields
         )
         if msg == "0,":
-            data["symbol"] = data["symbol"].apply(lambda s: s[:6]+".SH" if s[:6].startswith("6") else s+".SZ")
+            data["symbol"] = data["symbol"].apply(lambda s: s[:6]+".SH" if s.startswith("6") else s[:6]+".SZ")
             data.rename_axis({"datetime": "trade_date"}, 1, inplace=True)
             return data
         else:
