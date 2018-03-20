@@ -117,7 +117,8 @@ class FxdayuDataView(DataView):
             raise Exception(msg)
 
     def distributed_query(self, query_func_name, symbol, start_date, end_date, limit=100000, **kwargs):
-        n_symbols = len(symbol.split(','))
+        symbol = symbol.split(',')
+        n_symbols = len(symbol)
         dates = self.data_api.query_trade_dates(start_date, end_date)
         n_days = len(dates)
 
