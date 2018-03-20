@@ -132,7 +132,6 @@ class FxdayuDataView(DataView):
             i = 0
             pos1, pos2 = n * i, n * (i + 1)
             while pos2 <= n_symbols:
-                print(symbol[pos1:pos2])
                 df, msg = getattr(self.data_api, query_func_name)(symbol=sep.join(symbol[pos1:pos2]),
                                                                   start_date=dates[0], end_date=dates[-1],
                                                                   **kwargs)
