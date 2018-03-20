@@ -481,6 +481,8 @@ class DataView(object):
         dates = self.data_api.query_trade_dates(start_date, end_date)
         n_days = len(dates)
 
+        print("当前请求%s..." % (query_func_name,))
+        print(kwargs)
         if n_symbols * n_days > limit:
             n = limit // n_symbols
 
@@ -488,11 +490,11 @@ class DataView(object):
             i = 0
             pos1, pos2 = n * i, n * (i + 1) - 1
             while pos2 < n_days:
-                print(pos2)
                 df, msg = getattr(self.data_api, query_func_name)(symbol=symbol,
                                                                   start_date=dates[pos1], end_date=dates[pos2],
                                                                   **kwargs)
                 df_list.append(df)
+                print("下载进度%s/%s." % (pos2, n_days))
                 i += 1
                 pos1, pos2 = n * i, n * (i + 1) - 1
             if pos1 < n_days:
