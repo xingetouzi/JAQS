@@ -117,7 +117,8 @@ class FxdayuDataView(DataView):
             raise Exception(msg)
 
     def distributed_query(self, query_func_name, symbol, start_date, end_date, limit=100000, **kwargs):
-        symbol = symbol.split(',')
+        sep = ','
+        symbol = symbol.split(sep)
         n_symbols = len(symbol)
         dates = self.data_api.query_trade_dates(start_date, end_date)
         n_days = len(dates)
@@ -131,7 +132,8 @@ class FxdayuDataView(DataView):
             i = 0
             pos1, pos2 = n * i, n * (i + 1)
             while pos2 <= n_symbols:
-                df, msg = getattr(self.data_api, query_func_name)(symbol=symbol[pos1:pos2],
+                print(symbol[pos1:pos2])
+                df, msg = getattr(self.data_api, query_func_name)(symbol=sep.join(symbol[pos1:pos2]),
                                                                   start_date=dates[0], end_date=dates[-1],
                                                                   **kwargs)
                 df_list.append(df)
@@ -139,13 +141,13 @@ class FxdayuDataView(DataView):
                 i += 1
                 pos1, pos2 = n * i, n * (i + 1)
             if pos1 < n_symbols:
-                df, msg = getattr(self.data_api, query_func_name)(symbol=symbol[pos1:],
+                df, msg = getattr(self.data_api, query_func_name)(symbol=sep.join(symbol[pos1:]),
                                                                   start_date=dates[0], end_date=dates[-1],
                                                                   **kwargs)
                 df_list.append(df)
             df = pd.concat(df_list, axis=0)
         else:
-            df, msg = getattr(self.data_api, query_func_name)(symbol,
+            df, msg = getattr(self.data_api, query_func_name)(symbol=sep.join(symbol),
                                                               start_date=start_date, end_date=end_date,
                                                               **kwargs)
         return df, msg
