@@ -566,6 +566,7 @@ class DataView(object):
         merge_q : pd.DataFrame or None
 
         """
+
         if not fields:
             return None, None
 
@@ -717,7 +718,6 @@ class DataView(object):
         # dfs = [df for df in dfs if df is not None]
 
         merge = pd.concat(dfs, axis=1, join='outer')
-
         # drop duplicated columns. ONE LINE EFFICIENT version
         mask_duplicated = merge.columns.duplicated()
         if np.any(mask_duplicated):
@@ -727,7 +727,6 @@ class DataView(object):
             # if merge.isnull().sum().sum() > 0:
             # print "WARNING: nan in final merged data. NO fill"
             # merge.fillna(method='ffill', inplace=True)
-
         merge = merge.sort_index(axis=1, level=['symbol', 'field'])
         merge.index.name = index_name
 

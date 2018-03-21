@@ -1,4 +1,4 @@
-from jaqs.data.dataview import DataView
+from JAQS.jaqs.data.dataview import DataView
 from jaqs.data import RemoteDataService, DataApi
 import pandas as pd
 
@@ -167,12 +167,14 @@ class FxdayuDataView(DataView):
         """
         sep = ','
         symbol_str = sep.join(symbol)
+        limit = 500000
 
         if self.freq == 1:
             daily_list = []
             quarterly_list = []
 
             # TODO : use fields = {field: kwargs} to enable params
+
             fields_market_daily = self._get_fields('market_daily', fields, append=True)
             if fields_market_daily:
                 print("NOTE: price adjust method is [{:s} adjust]".format(self.adjust_mode))
@@ -180,7 +182,7 @@ class FxdayuDataView(DataView):
                 df_daily, msg1 = self.distributed_query('daily', symbol_str,
                                                         start_date=self.extended_start_date_d, end_date=self.end_date,
                                                         adjust_mode=None, fields=sep.join(fields_market_daily),
-                                                        limit=100000)
+                                                        limit=limit)
                 # df_daily, msg1 = self.data_api.daily(symbol_str, start_date=self.extended_start_date_d, end_date=self.end_date,
                 #                                     adjust_mode=None, fields=sep.join(fields_market_daily))
 
@@ -193,8 +195,8 @@ class FxdayuDataView(DataView):
                                                                    start_date=self.extended_start_date_d,
                                                                    end_date=self.end_date,
                                                                    adjust_mode=self.adjust_mode,
-                                                                   fields=sep.join(fields_market_daily), limit=100000)
-
+                                                                   fields=sep.join(fields_market_daily),
+                                                                   limit=limit)
                     df_daily = pd.merge(df_daily, df_daily_adjust, how='outer',
                                         on=['symbol', 'trade_date'], suffixes=('', '_adj'))
                 daily_list.append(df_daily.loc[:, fields_market_daily])
@@ -204,7 +206,8 @@ class FxdayuDataView(DataView):
                 df_ref_daily, msg2 = self.distributed_query('query_lb_dailyindicator', symbol_str,
                                                             start_date=self.extended_start_date_d,
                                                             end_date=self.end_date,
-                                                            fields=sep.join(fields_ref_daily), limit=20000)
+                                                            fields=sep.join(fields_ref_daily),
+                                                            limit=limit)
                 daily_list.append(df_ref_daily.loc[:, fields_ref_daily])
 
             # ----------------------------- query factor -----------------------------
