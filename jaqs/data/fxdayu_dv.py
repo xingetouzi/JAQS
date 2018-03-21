@@ -1,4 +1,4 @@
-from JAQS.jaqs.data.dataview import DataView
+from jaqs.data.dataview import DataView
 from jaqs.data import RemoteDataService, DataApi
 import pandas as pd
 
