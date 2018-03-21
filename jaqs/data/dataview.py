@@ -949,8 +949,6 @@ class DataView(object):
             self._prepare_group([field_name])
             return True
 
-        merge_d, merge_q = self._prepare_daily_quarterly([field_name])
-
         if self._is_daily_field(field_name):
             if self.data_d is None:
                 raise ValueError("Please prepare [{:s}] first.".format(field_name))
@@ -968,7 +966,7 @@ class DataView(object):
                         is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
 
         if is_quarterly:
-            df_ann = merge_q.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
+            df_ann = merge.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
             df_ann.columns = df_ann.columns.droplevel(level='field')
             df_expanded = align(merge, df_ann, self.dates)
             self._append_df(df_expanded, field_name, is_quarterly=False)
@@ -2207,8 +2205,6 @@ class EventDataView(object):
             self._prepare_group([field_name])
             return True
 
-        merge_d, merge_q = self._prepare_daily_quarterly([field_name])
-
         if self._is_daily_field(field_name):
             if self.data_d is None:
                 raise ValueError("Please prepare [{:s}] first.".format(field_name))
@@ -2226,7 +2222,7 @@ class EventDataView(object):
                         is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
 
         if is_quarterly:
-            df_ann = merge_q.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
+            df_ann = merge.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
             df_ann.columns = df_ann.columns.droplevel(level='field')
             df_expanded = align(merge, df_ann, self.dates)
             self._append_df(df_expanded, field_name, is_quarterly=False)
