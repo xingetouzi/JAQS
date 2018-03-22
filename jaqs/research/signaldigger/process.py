@@ -149,10 +149,6 @@ def neutralize(factor_df,
             X[_] = frame
         return X
 
-    factor_df = jutil.fillinf(factor_df)
-    factor_df = _mask_non_index_member(factor_df, index_member)  # 剔除非指数成份股
-    factor_df = factor_df.dropna(how="all")  # 删除全为空的截面
-
     # 获取对数流动市值，并去极值、标准化。市值类因子不需进行这一步
     if float_mv is not None:
         assert np.all(factor_df.index == float_mv.index)
@@ -161,6 +157,10 @@ def neutralize(factor_df,
 
     # 获取行业分类信息
     X_dict = _deal_industry_class(group)
+
+    factor_df = jutil.fillinf(factor_df)
+    factor_df = _mask_non_index_member(factor_df, index_member)  # 剔除非指数成份股
+    factor_df = factor_df.dropna(how="all")  # 删除全为空的截面
     result = []
     # 逐个截面进行回归，留残差作为中性化后的因子值
     for i in factor_df.index:
