@@ -538,7 +538,7 @@ class DataView(object):
             self._prepare_group(group_fields)
 
         self.fields = []
-        if (self.data_d is not None) and self.data_d.size !=0:
+        if (self.data_d is not None) and self.data_d.size != 0:
             self.fields += list(self.data_d.columns.levels[1])
         if (self.data_q is not None) and self.data_q.size != 0:
             self.fields += list(self.data_q.columns.levels[1])
@@ -810,27 +810,27 @@ class DataView(object):
 
         # if a symbol is index member of any one universe, its value of index_member will be 1.0
         universe = index.split(',')
-        
+
         exist_symbols = self.data_d.columns.levels[0]
         exist_fields = self.data_d.columns.levels[1]
-        
+
         for univ in universe:
             if univ + '_member' not in exist_fields:
                 df = self.data_api.query_index_member_daily(univ, self.extended_start_date_d, self.end_date)
-                
-                if len(set(exist_symbols) -  set(df.columns)) > 0:
-                    symbols = list(set(exist_symbols)&set(df.columns))
-                    df = df.loc[:,symbols]
-                
+
+                if len(set(exist_symbols) - set(df.columns)) > 0:
+                    symbols = list(set(exist_symbols) & set(df.columns))
+                    df = df.loc[:, symbols]
+
                 self.append_df(df, univ + '_member', is_quarterly=False)
-    
+
                 # use weights of the first universe
-                df_weights = self.data_api.query_index_weights_daily(univ, self.extended_start_date_d,self.end_date)
-                
-                if len(set(exist_symbols) -  set(df_weights.columns)) > 0:
-                    symbols = list(set(exist_symbols)&set(df_weights.columns))
-                    df_weights = df_weights.loc[:,symbols]
-                
+                df_weights = self.data_api.query_index_weights_daily(univ, self.extended_start_date_d, self.end_date)
+
+                if len(set(exist_symbols) - set(df_weights.columns)) > 0:
+                    symbols = list(set(exist_symbols) & set(df_weights.columns))
+                    df_weights = df_weights.loc[:, symbols]
+
                 self.append_df(df_weights, univ + '_weight', is_quarterly=False)
 
     def _prepare_comp_info(self):
@@ -960,23 +960,24 @@ class DataView(object):
             _, merge = self._prepare_daily_quarterly([field_name])
             is_quarterly = True
 
-        merge = merge.loc[:, pd.IndexSlice[:, field_name]]
-        merge.columns = merge.columns.droplevel(level=1)
-        self._append_df(merge, field_name,
+        df = merge.loc[:, pd.IndexSlice[:, field_name]]
+        df.columns = df.columns.droplevel(level=1)
+        self._append_df(df, field_name,
                         is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
 
         if is_quarterly:
             df_ann = merge.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
             df_ann.columns = df_ann.columns.droplevel(level='field')
-            df_expanded = align(merge, df_ann, self.dates)
+            df_expanded = align(df, df_ann, self.dates)
             self._append_df(df_expanded, field_name, is_quarterly=False)
+
         return True
 
     def add_formula(self, field_name, formula, is_quarterly,
                     add_data=False,
                     overwrite=True,
                     formula_func_name_style='camel', data_api=None,
-                    register_funcs = None,
+                    register_funcs=None,
                     within_index=True):
         """
         Add a new field, which is calculated using existing fields.
@@ -1027,7 +1028,7 @@ class DataView(object):
             for func in register_funcs.keys():
                 if func in parser.ops1 or func in parser.ops2 or func in parser.functions or \
                                 func in parser.consts or func in parser.values:
-                    raise ValueError("注册的自定义函数名%s与内置的函数名称重复,请更换register_funcs中定义的相关函数名称."%(func,))
+                    raise ValueError("注册的自定义函数名%s与内置的函数名称重复,请更换register_funcs中定义的相关函数名称." % (func,))
                 parser.functions[func] = register_funcs[func]
 
         expr = parser.parse(formula)
@@ -1061,8 +1062,8 @@ class DataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
-            if df_index_member.size==0:
-                df_index_member=None
+            if df_index_member.size == 0:
+                df_index_member = None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
@@ -2232,7 +2233,7 @@ class EventDataView(object):
                     add_data=False,
                     overwrite=True,
                     formula_func_name_style='camel', data_api=None,
-                    register_funcs = None,
+                    register_funcs=None,
                     within_index=True):
         """
         Add a new field, which is calculated using existing fields.
@@ -2283,7 +2284,7 @@ class EventDataView(object):
             for func in register_funcs.keys():
                 if func in parser.ops1 or func in parser.ops2 or func in parser.functions or \
                                 func in parser.consts or func in parser.values:
-                    raise ValueError("注册的自定义函数名%s与内置的函数名称重复,请更换register_funcs中定义的相关函数名称."%(func,))
+                    raise ValueError("注册的自定义函数名%s与内置的函数名称重复,请更换register_funcs中定义的相关函数名称." % (func,))
                 parser.functions[func] = register_funcs[func]
 
         expr = parser.parse(formula)
@@ -2317,8 +2318,8 @@ class EventDataView(object):
         df_ann = self._get_ann_df()
         if within_index:
             df_index_member = self.get_ts('index_member', start_date=self.extended_start_date_d, end_date=self.end_date)
-            if df_index_member.size==0:
-                df_index_member=None
+            if df_index_member.size == 0:
+                df_index_member = None
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates, index_member=df_index_member)
         else:
             df_eval = parser.evaluate(var_df_dic, ann_dts=df_ann, trade_dts=self.dates)
