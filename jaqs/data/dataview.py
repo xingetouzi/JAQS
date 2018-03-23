@@ -481,6 +481,8 @@ class DataView(object):
         dates = self.data_api.query_trade_dates(start_date, end_date)
         n_days = len(dates)
 
+        print("当前请求%s..." % (query_func_name,))
+        print(kwargs)
         if n_symbols * n_days > limit:
             n = limit // n_symbols
 
@@ -488,11 +490,11 @@ class DataView(object):
             i = 0
             pos1, pos2 = n * i, n * (i + 1) - 1
             while pos2 < n_days:
-                print(pos2)
                 df, msg = getattr(self.data_api, query_func_name)(symbol=symbol,
                                                                   start_date=dates[pos1], end_date=dates[pos2],
                                                                   **kwargs)
                 df_list.append(df)
+                print("下载进度%s/%s." % (pos2, n_days))
                 i += 1
                 pos1, pos2 = n * i, n * (i + 1) - 1
             if pos1 < n_days:
@@ -564,6 +566,7 @@ class DataView(object):
         merge_q : pd.DataFrame or None
 
         """
+
         if not fields:
             return None, None
 
@@ -715,7 +718,6 @@ class DataView(object):
         # dfs = [df for df in dfs if df is not None]
 
         merge = pd.concat(dfs, axis=1, join='outer')
-
         # drop duplicated columns. ONE LINE EFFICIENT version
         mask_duplicated = merge.columns.duplicated()
         if np.any(mask_duplicated):
@@ -725,7 +727,6 @@ class DataView(object):
             # if merge.isnull().sum().sum() > 0:
             # print "WARNING: nan in final merged data. NO fill"
             # merge.fillna(method='ffill', inplace=True)
-
         merge = merge.sort_index(axis=1, level=['symbol', 'field'])
         merge.index.name = index_name
 
@@ -948,8 +949,6 @@ class DataView(object):
             self._prepare_group([field_name])
             return True
 
-        merge_d, merge_q = self._prepare_daily_quarterly([field_name])
-
         if self._is_daily_field(field_name):
             if self.data_d is None:
                 raise ValueError("Please prepare [{:s}] first.".format(field_name))
@@ -967,7 +966,7 @@ class DataView(object):
                         is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
 
         if is_quarterly:
-            df_ann = merge_q.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
+            df_ann = merge.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
             df_ann.columns = df_ann.columns.droplevel(level='field')
             df_expanded = align(merge, df_ann, self.dates)
             self._append_df(df_expanded, field_name, is_quarterly=False)
@@ -2206,8 +2205,6 @@ class EventDataView(object):
             self._prepare_group([field_name])
             return True
 
-        merge_d, merge_q = self._prepare_daily_quarterly([field_name])
-
         if self._is_daily_field(field_name):
             if self.data_d is None:
                 raise ValueError("Please prepare [{:s}] first.".format(field_name))
@@ -2225,7 +2222,7 @@ class EventDataView(object):
                         is_quarterly=is_quarterly)  # whether contain only trade days is decided by existing data.
 
         if is_quarterly:
-            df_ann = merge_q.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
+            df_ann = merge.loc[:, pd.IndexSlice[:, self.ANN_DATE_FIELD_NAME]]
             df_ann.columns = df_ann.columns.droplevel(level='field')
             df_expanded = align(merge, df_ann, self.dates)
             self._append_df(df_expanded, field_name, is_quarterly=False)

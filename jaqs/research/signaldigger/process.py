@@ -136,42 +136,26 @@ def neutralize(factor_df,
     assert np.all(factor_df.index == group.index)
     assert np.all(factor_df.columns == group.columns)
 
-    def _deal_industry_class(industry_class):
-        industry_class = industry_class.apply(lambda x: x.rank(method="dense", ascending=True), axis=1)
-        symbols = industry_class.columns
-        X = {}
-        for _, se in industry_class.iterrows():
-            class_num = se.max()
-            frame = pd.DataFrame(0, index=np.arange(class_num) + 1, columns=symbols)
-            for symbol in symbols:
-                this_class = se[symbol]
-                frame.loc[this_class, symbol] = 1
-            X[_] = frame
-        return X
-
-    factor_df = jutil.fillinf(factor_df)
-    factor_df = _mask_non_index_member(factor_df, index_member)  # 剔除非指数成份股
-    factor_df = factor_df.dropna(how="all")  # 删除全为空的截面
-
     # 获取对数流动市值，并去极值、标准化。市值类因子不需进行这一步
     if float_mv is not None:
         assert np.all(factor_df.index == float_mv.index)
         assert np.all(factor_df.columns == float_mv.columns)
         x1 = standardize(winsorize(np.log(float_mv), index_member=index_member), index_member)
 
-    # 获取行业分类信息
-    X_dict = _deal_industry_class(group)
+    factor_df = jutil.fillinf(factor_df)
+    factor_df = _mask_non_index_member(factor_df, index_member)  # 剔除非指数成份股
+    factor_df = factor_df.dropna(how="all")  # 删除全为空的截面
     result = []
     # 逐个截面进行回归，留残差作为中性化后的因子值
     for i in factor_df.index:
         # 获取行业分类信息
-        X = X_dict[i]
+        X = pd.get_dummies(group.loc[i,:])
         if float_mv is not None:
-            nfactors = int(X.index[-1] + 1)
-            DataAll = pd.concat([X.T, x1.loc[i], factor_df.loc[i]], axis=1)
+            nfactors = len(X.columns)+1
+            DataAll = pd.concat([X, x1.loc[i], factor_df.loc[i]], axis=1)
         else:
-            nfactors = int(X.index[-1])
-            DataAll = pd.concat([X.T, factor_df.loc[i]], axis=1)
+            nfactors = len(X.columns)
+            DataAll = pd.concat([X, factor_df.loc[i]], axis=1)
         # 剔除截面中值含空的股票
         DataAll = DataAll.dropna()
         if len(DataAll) == 0:
@@ -186,8 +170,7 @@ def neutralize(factor_df,
         residuals.columns = [i]
         result.append(residuals)
 
-    result = pd.concat(result, axis=1).T
-    # 恢复在中性化过程中剔除的行和列
+    # 合并回归结果,恢复在中性化过程中剔除的行和列
+    result = pd.concat(result, axis=1).reindex(factor_df.columns).T
     result = result.reindex(factor_df.index)
-    result = result.T.reindex(factor_df.columns).T
     return result

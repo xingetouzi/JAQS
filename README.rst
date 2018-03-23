@@ -35,12 +35,12 @@ Installation
 What's new
 ==========
 
-参见 \ `文档 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
+参见 \ `文档 <http://jaqs-fork.readthedocs.io/zh_CN/latest/>`__\
 
 Document
 ========
 
-参见 \ `文档 <https://github.com/quantOS-org/JAQS/blob/master/doc/install.md>`__\
+参见 \ `文档 <http://jaqs-fork.readthedocs.io/zh_CN/latest/>`__\
 
 
 Questions
