@@ -147,8 +147,6 @@ def daily_sec_industry(api, symbol, start, end, source="sw", value="industry1_co
     data, msg = api.query("lb.secIndustry", "symbol={}&industry_src={}".format(symbol, source))
     data["in_date"] = data["in_date"].apply(int)
     data["out_date"] = data["out_date"].replace("", "99999999").apply(int)
-    print(dates)
-    print(data[["in_date", "out_date", "symbol", "industry1_name", "industry1_code"]])
     if msg != "0,":
         raise Exception(msg)
 
